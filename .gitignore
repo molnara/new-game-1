@@ -9,3 +9,4 @@ artifacts/
 .vs/
 .idea/
 container/.env
+*.csproj.old
