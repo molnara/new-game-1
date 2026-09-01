@@ -1,0 +1,35 @@
+name: newgame1
+
+services:
+  gamedev:
+    build:
+      context: .
+      dockerfile: Containerfile
+      args:
+        GODOT_VERSION: "4.7.2"
+        UID: "1000"
+        GID: "1000"
+    userns_mode: "keep-id:uid=1000,gid=1000"
+    working_dir: /workspace
+    volumes:
+      - ..:/workspace
+      - claude-state:/home/dev/.claude
+      - nuget-cache:/home/dev/.nuget
+      - godot-data:/home/dev/.local/share/godot
+      - godot-cache:/home/dev/.cache
+    environment:
+      - DOTNET_CLI_TELEMETRY_OPTOUT=1
+      - GIT_AUTHOR_NAME=${GIT_NAME}
+      - GIT_AUTHOR_EMAIL=${GIT_EMAIL}
+      - GIT_COMMITTER_NAME=${GIT_NAME}
+      - GIT_COMMITTER_EMAIL=${GIT_EMAIL}
+    stdin_open: true
+    tty: true
+    init: true
+    command: sleep infinity
+
+volumes:
+  claude-state:
+  nuget-cache:
+  godot-data:
+  godot-cache:

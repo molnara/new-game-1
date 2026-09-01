@@ -1,0 +1,10 @@
+services:
+  gamedev:
+    devices:
+      - nvidia.com/gpu=all
+    volumes:
+      - ${XDG_RUNTIME_DIR}/${WAYLAND_DISPLAY}:/tmp/runtime/${WAYLAND_DISPLAY}
+    environment:
+      - WAYLAND_DISPLAY=${WAYLAND_DISPLAY}
+      - XDG_RUNTIME_DIR=/tmp/runtime
+      - DISPLAY=

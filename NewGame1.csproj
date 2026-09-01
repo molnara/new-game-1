@@ -1,0 +1,24 @@
+<Project Sdk="Godot.NET.Sdk/4.7.2">
+  <PropertyGroup>
+    <EnableDynamicLoading>true</EnableDynamicLoading>
+    <RootNamespace>NewGame1</RootNamespace>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <Compile Remove="src/Core/**" />
+    <Compile Remove="tests/Core.Tests/**" />
+    <Compile Remove="tests/Game.Tests/**" Condition="'$(Configuration)' == 'ExportRelease'" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="src/Core/NewGame1.Core.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Chickensoft.GoDotTest" Version="2.0.46" />
+    <PackageReference Include="Serilog" Version="4.4.0" />
+    <PackageReference Include="Serilog.Extensions.Logging" Version="10.0.0" />
+    <PackageReference Include="Serilog.Sinks.File" Version="7.0.0" />
+    <PackageReference Include="Shouldly" Version="4.3.0" />
+  </ItemGroup>
+</Project>
