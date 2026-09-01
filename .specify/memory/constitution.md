@@ -1,50 +1,138 @@
-# [PROJECT_NAME] Constitution
-<!-- Example: Spec Constitution, TaskFlow Constitution, etc. -->
+<!--
+Sync Impact Report
+==================
+Version change: (unversioned template) → 1.0.0
+Bump rationale: Initial ratification. The prior file was the unfilled scaffold with no
+project-specific values, so this is the first governing version rather than an amendment.
+
+Modified principles:
+  - [PRINCIPLE_1_NAME] → I. Core/Adapter Separation (NON-NEGOTIABLE)
+  - [PRINCIPLE_2_NAME] → II. Test-First, Two Tiers
+  - [PRINCIPLE_3_NAME] → III. Observability by Default
+  - [PRINCIPLE_4_NAME] → IV. Visual Verification
+  - [PRINCIPLE_5_NAME] → V. Simplicity
+
+Added sections:
+  - Additional Constraints (was [SECTION_2_NAME])
+  - Development Workflow & Quality Gates (was [SECTION_3_NAME])
+
+Removed sections: none
+
+Deferred TODOs: none. All placeholders resolved.
+-->
+
+# NewGame1 Constitution
+
+NewGame1 is a small 2D game built in Godot 4.7 (.NET) with C#, developed by a solo developer
+working with Claude Code. These principles exist to keep that arrangement productive: fast
+feedback, evidence over assumption, and no more machinery than the game needs.
 
 ## Core Principles
 
-### [PRINCIPLE_1_NAME]
-<!-- Example: I. Library-First -->
-[PRINCIPLE_1_DESCRIPTION]
-<!-- Example: Every feature starts as a standalone library; Libraries must be self-contained, independently testable, documented; Clear purpose required - no organizational-only libraries -->
+### I. Core/Adapter Separation (NON-NEGOTIABLE)
 
-### [PRINCIPLE_2_NAME]
-<!-- Example: II. CLI Interface -->
-[PRINCIPLE_2_DESCRIPTION]
-<!-- Example: Every library exposes functionality via CLI; Text in/out protocol: stdin/args → stdout, errors → stderr; Support JSON + human-readable formats -->
+All game rules, state, math, and data MUST live in `src/Core`, a plain C# library with no
+reference to Godot. Godot scripts in `src/Game` MUST be thin adapters: they read input, call
+into Core, and update nodes. Adapters MUST NOT contain game rules, and Core MUST NOT contain
+`using Godot`.
 
-### [PRINCIPLE_3_NAME]
-<!-- Example: III. Test-First (NON-NEGOTIABLE) -->
-[PRINCIPLE_3_DESCRIPTION]
-<!-- Example: TDD mandatory: Tests written → User approved → Tests fail → Then implement; Red-Green-Refactor cycle strictly enforced -->
+When a Core feature needs an engine service (time, randomness with engine seeding, file access,
+audio, scene loading), Core MUST define the interface and `src/Game/Infrastructure` MUST provide
+the implementation. Dependencies point inward only: `src/Game` depends on `src/Core`; `src/Core`
+depends on neither Godot nor `src/Game`.
 
-### [PRINCIPLE_4_NAME]
-<!-- Example: IV. Integration Testing -->
-[PRINCIPLE_4_DESCRIPTION]
-<!-- Example: Focus areas requiring integration tests: New library contract tests, Contract changes, Inter-service communication, Shared schemas -->
+**Rationale**: Core is testable in milliseconds without an engine, and the game logic stays
+portable across engine versions and rewrites of the presentation layer.
 
-### [PRINCIPLE_5_NAME]
-<!-- Example: V. Observability, VI. Versioning & Breaking Changes, VII. Simplicity -->
-[PRINCIPLE_5_DESCRIPTION]
-<!-- Example: Text I/O ensures debuggability; Structured logging required; Or: MAJOR.MINOR.BUILD format; Or: Start simple, YAGNI principles -->
+### II. Test-First, Two Tiers
 
-## [SECTION_2_NAME]
-<!-- Example: Additional Constraints, Security Requirements, Performance Standards, etc. -->
+Every Core feature MUST ship with xUnit tests in `tests/Core.Tests`, written before or alongside
+the implementation — never bolted on after the feature is reported done. Node behavior that
+genuinely cannot be pushed into Core gets a GoDotTest in `tests/Game.Tests`.
 
-[SECTION_2_CONTENT]
-<!-- Example: Technology stack requirements, compliance standards, deployment policies, etc. -->
+Bugs MUST be fixed by first writing the failing test that reproduces them, then making it pass.
+A bug fix without a reproducing test is incomplete.
 
-## [SECTION_3_NAME]
-<!-- Example: Development Workflow, Review Process, Quality Gates, etc. -->
+The fast tier is the default; the slow tier is the exception. Before writing a `Game.Tests` test,
+the author MUST first ask whether the logic under test could move into Core instead.
 
-[SECTION_3_CONTENT]
-<!-- Example: Code review requirements, testing gates, deployment approval process, etc. -->
+**Rationale**: the fast tier catches most bugs at negligible cost; the slow tier exists only for
+what truly needs the engine, and it stays small so it stays runnable.
+
+### III. Observability by Default
+
+Every system MUST log through `Logging.For<T>()` with structured messages at appropriate levels.
+`GD.Print` MUST NOT be used outside `src/Game/Infrastructure`.
+
+Every gameplay system MUST expose at least one dev console command for inspecting or manipulating
+its state. Errors MUST NOT be swallowed silently: an exception is either handled with a logged
+explanation or allowed to propagate. Empty `catch` blocks and bare `catch { }` are prohibited.
+
+**Rationale**: a solo dev debugs by reading logs and poking the console, not by attaching a
+debugger to a running game.
+
+### IV. Visual Verification
+
+Any change affecting what is rendered MUST be verified by a screenshot captured via
+`scripts/screenshot.sh`, and that screenshot MUST be read and confirmed by the implementer before
+the task is reported done. "The build passed" is not visual verification; neither is a screenshot
+that was captured but not looked at.
+
+Main scenes have golden reference screenshots. A change that alters a golden image MUST update it
+intentionally in the same PR, with a note in the PR description explaining what changed and why.
+
+**Rationale**: the developer cannot see the game from inside the container; screenshots are the
+only evidence of visual correctness.
+
+### V. Simplicity
+
+Prefer plain C# and Godot's built-in features. No new framework, DI container, ECS, or
+third-party addon may be introduced without a written justification in the plan's Complexity
+Tracking section naming the specific problem it solves and the simpler options rejected.
+
+Absent such a justification, the simplest thing that works is the correct thing.
+
+**Rationale**: this is a small game; every dependency is maintenance burden and a learning cost
+paid by one person.
+
+## Additional Constraints
+
+- **Stack**: Godot 4.7.2 (.NET) with C# targeting `net10.0`. Host and container run identical
+  versions.
+- **Repository layout**: `src/Core` (engine-free logic), `src/Game` (Godot adapters),
+  `src/Game/Infrastructure` (engine-service implementations), `tests/Core.Tests` (xUnit),
+  `tests/Game.Tests` (GoDotTest), `scripts/` (verification tooling), `scenes/`, `assets/`.
+- **Environment**: development happens in a Podman container with no GPU and no real display.
+  Rendering works only through `xvfb-run` (software).
+- **Container ownership**: `container/` MUST NOT be modified without asking the developer first.
+- **Asset changes**: adding assets requires re-running `godot --headless --import` before the
+  change is considered buildable.
+
+## Development Workflow & Quality Gates
+
+Work happens on spec-kit feature branches and merges to `master` by squash PR.
+
+`scripts/verify.sh` — build, Core tests, Godot tests, screenshot — MUST pass before any task is
+reported complete. A task with a failing or unrun `verify.sh` is not complete, and reporting it
+as complete is a violation of this constitution regardless of how small the change looked.
+
+When verification fails for reasons outside the change (broken tooling, environment drift), the
+implementer MUST say so explicitly rather than silently skipping the gate.
 
 ## Governance
-<!-- Example: Constitution supersedes all other practices; Amendments require documentation, approval, migration plan -->
 
-[GOVERNANCE_RULES]
-<!-- Example: All PRs/reviews must verify compliance; Complexity must be justified; Use [GUIDANCE_FILE] for runtime development guidance -->
+This constitution supersedes other practice documents in this repository. Where `CLAUDE.md`, a
+plan, or a spec conflicts with it, this file wins, and the conflicting document is corrected.
 
-**Version**: [CONSTITUTION_VERSION] | **Ratified**: [RATIFICATION_DATE] | **Last Amended**: [LAST_AMENDED_DATE]
-<!-- Example: Version: 2.1.1 | Ratified: 2025-06-13 | Last Amended: 2025-07-16 -->
+Amendments require updating this file with a version bump and a note recording the rationale in
+the Sync Impact Report. Versioning follows semantic versioning:
+
+- **MAJOR**: a principle is removed or redefined in a backward-incompatible way.
+- **MINOR**: a principle or section is added, or existing guidance is materially expanded.
+- **PATCH**: clarifications, wording, and non-semantic refinements.
+
+Every PR is reviewed against these principles before merge. Deviations MUST be recorded in the
+plan's Complexity Tracking section with a justification, not discovered after the fact in the
+diff.
+
+**Version**: 1.0.0 | **Ratified**: 2026-09-01 | **Last Amended**: 2026-09-01

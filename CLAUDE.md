@@ -8,3 +8,8 @@
 - Build: `dotnet build`
 - Re-import after adding assets: `godot --headless --import`
 - Run headless smoke check: `godot --headless --quit-after 60 2>&1 | grep -i "script error\|parse error" && echo FAIL || echo OK`
+
+## Spec Kit
+During /speckit-implement: commit after each completed task group (each phase in tasks.md),
+with a conventional message (feat:/fix:/test:/chore:). Include the tasks.md checkbox updates
+in the same commit. Never commit with failing tests.
