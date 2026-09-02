@@ -11,7 +11,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
       ripgrep jq less procps nano imagemagick \
       libx11-6 libxcursor1 libxinerama1 libxrandr2 libxi6 \
       libgl1 libegl1 libxkbcommon0 libfontconfig1 libasound2t64 libpulse0 \
-      xvfb mesa-utils libgl1-mesa-dri mesa-vulkan-drivers vulkan-tools \
+      xvfb mesa-utils libgl1-mesa-dri mesa-vulkan-drivers vulkan-tools xauth \
     && rm -rf /var/lib/apt/lists/*
 
 # Godot (.NET build)
