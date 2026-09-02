@@ -364,7 +364,7 @@ it stops at that stage, names it, and exits non-zero.
       and whether it replaced an existing file; leave the existing reference untouched if the capture
       fails. It MUST NOT be a `verify.sh` stage: a gate that regenerates its own expectation cannot
       fail. Depends on T044.
-- [ ] T049 [US4] Generate and commit `tests/golden/main.png` — the committed reference FR-035
+- [X] T049 [US4] Generate and commit `tests/golden/main.png` — the committed reference FR-035
       requires for each capture target — by running `scripts/update-golden.sh main`
       in the container (never on the host — the host renders through a real GPU driver and will not
       match byte-for-byte, research R2). Read the image before committing it. Depends on T048.
