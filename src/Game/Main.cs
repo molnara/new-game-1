@@ -3,6 +3,7 @@ using Chickensoft.GoDotTest;
 using Godot;
 using Microsoft.Extensions.Logging;
 using NewGame1.Autoloads;
+using NewGame1.Core.Screenshots;
 using NewGame1.Infrastructure;
 
 namespace NewGame1;
@@ -17,7 +18,9 @@ public partial class Main : Node
         _logger = Logging.For<Main>();
         _logger.LogInformation("Startup: Main ready");
 
-        Logging.RegisterCommands(GetNode<DevConsole>("/root/DevConsole").Registry);
+        var registry = GetNode<DevConsole>("/root/DevConsole").Registry;
+        Logging.RegisterCommands(registry);
+        ScreenshotCommand.Register(registry, new GodotScreenshotService());
 
         var userArgs = OS.GetCmdlineUserArgs();
 

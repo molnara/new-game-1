@@ -316,7 +316,7 @@ The headless path is independently valuable and does not need the console.
       number of fully rendered frames** — a frame count, never a wall-clock delay (FR-026) — then
       capture through `IScreenshotService` and quit with a status. If those frames cannot be produced
       at all, fail with a clear reason rather than writing a blank file. Depends on T041.
-- [ ] T043 [US3] Register `ScreenshotHarness` as an autoload in `project.godot` and register the
+- [X] T043 [US3] Register `ScreenshotHarness` as an autoload in `project.godot` and register the
       `screenshot` command with the registry at startup from `src/Game/Main.cs`, wiring
       `GodotScreenshotService` as the `IScreenshotService` implementation. Depends on T040, T042.
 - [ ] T044 [US3] Create `scripts/screenshot.sh` per [contracts/cli-scripts.md](./contracts/cli-scripts.md):
