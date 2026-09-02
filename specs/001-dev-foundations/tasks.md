@@ -625,3 +625,61 @@ names `scripts/verify.sh` as the gate for every task.
   `.editorconfig` (research R13) and the Godot test stage on a zero-test run (research R14). T051
   exists because both were found by spikes rather than by review.
 - `artifacts/` is gitignored and disposable; `tests/golden/` is committed. Never swap them.
+
+---
+
+## Phase 9: Convergence
+
+- [ ] T073 CRITICAL — remove `GD.Print`/`GD.PrintErr` from
+      `src/Game/Autoloads/ScreenshotHarness.cs` (lines 85 and 92), which sit outside
+      `src/Game/Infrastructure`. Route the captured path and the failure reason through an
+      Infrastructure seam instead, keeping the current stdout/stderr behaviour that
+      `scripts/screenshot.sh` surfaces on failure. per Constitution III (contradicts)
+- [ ] T074 CRITICAL — replace the empty catch body in
+      `src/Game/Infrastructure/GodotScreenshotService.cs` `TryDelete` (lines 77-79) with a logged
+      explanation of the failed temp-file cleanup. Constitution III prohibits empty catch blocks;
+      a leaked `.tmp` in `artifacts/` currently disappears silently. per Constitution III
+      (contradicts)
+- [ ] T075 Add the anti-vacuity assertion to `scripts/verify.sh`'s `stage_core_tests`: assert that a
+      non-zero number of fast-tier tests actually ran rather than branching on `dotnet test`'s exit
+      code alone, matching what `stage_godot_tests` already does. per FR-028f (partial)
+- [ ] T076 Strengthen `tests/Game.Tests/ConsoleInputTest.cs` so the toggle it synthesizes is the
+      keystroke a real keyboard sends: set `Unicode` on the `InputEventKey` (backtick is 96)
+      alongside the keycodes. As written the event carries no unicode, so a focused `LineEdit`
+      never treats it as text and the test cannot observe the leak FR-011 exists to prevent. Then
+      fix whatever the strengthened test reveals in `src/Game/Autoloads/DevConsole.cs` — a focused
+      `LineEdit` consumes printable keys during GUI input, before `_UnhandledKeyInput` is reached,
+      which would leave the console unclosable by its own toggle key (FR-009, US2/AC1).
+      per FR-011, FR-028e, SC-016 (partial)
+- [ ] T077 Make `ConsoleIsVisibleWithinASingleDisplayedFrame` in
+      `tests/Game.Tests/ConsoleInputTest.cs` actually assert SC-007: it currently waits two
+      `process_frame` signals before asserting and is otherwise a duplicate of
+      `ToggleOpensAndClosesTheConsole`, so nothing measures the open latency. Assert the console is
+      visible after a single displayed frame, and record in a comment which part of the two-tick
+      delay is harness-only latency from `Input.ParseInputEvent`. per SC-007, FR-028e (partial)
+- [ ] T078 Make the console output-history bound configurable in
+      `src/Game/Autoloads/DevConsole.cs`, which hard-codes `private const int HistoryCapacity =
+      1000`. FR-019 requires a stated, configurable number of lines defaulting to 1000; follow the
+      launch-flag convention `src/Game/Infrastructure/Logging.cs` establishes for `--log-level`,
+      whose own doc comment already claims console history reuses it. per FR-019 (missing)
+- [ ] T079 Stop `Logging.PruneOldSessions` in `src/Game/Infrastructure/Logging.cs` from deleting a
+      session log another running session holds open: `File.Delete` unlinks the file regardless, so
+      the other session keeps writing to an inode nobody can find. Session file names already carry
+      the writing process id (`LogPaths.Resolve`), so filter on whether that process is still alive
+      before deleting, and cover the decision with a fast-tier test in
+      `tests/Core.Tests/Diagnostics/LogRetentionPolicyTests.cs`. per FR-006 (missing)
+- [ ] T080 Remove the XML doc comments from `src/Game` — 8 of its 10 files carry them, 25 in
+      `Logging.cs` and 19 in `PerfMonitor.cs` alone. Constitution VI puts XML doc comments only on
+      public `src/Core` APIs and plan.md's VI delta says the Game-side adapters get none. Keep the
+      content that explains *why* as ordinary `//` comments; drop the rest. per Constitution VI,
+      plan: VI delta point 4 (contradicts)
+- [ ] T081 Correct the off-by-one in log retention: `Logging.PruneOldSessions` runs before the new
+      session's file is created and keeps 10, so the folder settles at 11 session logs (observed
+      after a container run) against the spec's stated "ten most recent session logs are kept".
+      Account for the incoming session in the keep count. per FR-006, spec Assumptions
+      (partial)
+- [ ] T082 Make the debug/information flush interval configurable in
+      `src/Game/Infrastructure/Logging.cs`, where it is hard-coded as `TimeSpan.FromSeconds(1)` in
+      both the timer's due time and its period. Clarification CHK008 recorded both timing defaults
+      as configurable and only `--stats-interval` exists; add the matching launch flag, defaulting
+      to 1 second. per FR-005, clarification CHK008 (partial)
