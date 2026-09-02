@@ -640,10 +640,10 @@ names `scripts/verify.sh` as the gate for every task.
       explanation of the failed temp-file cleanup. Constitution III prohibits empty catch blocks;
       a leaked `.tmp` in `artifacts/` currently disappears silently. per Constitution III
       (contradicts)
-- [ ] T075 Add the anti-vacuity assertion to `scripts/verify.sh`'s `stage_core_tests`: assert that a
+- [X] T075 Add the anti-vacuity assertion to `scripts/verify.sh`'s `stage_core_tests`: assert that a
       non-zero number of fast-tier tests actually ran rather than branching on `dotnet test`'s exit
       code alone, matching what `stage_godot_tests` already does. per FR-028f (partial)
-- [ ] T076 Strengthen `tests/Game.Tests/ConsoleInputTest.cs` so the toggle it synthesizes is the
+- [X] T076 Strengthen `tests/Game.Tests/ConsoleInputTest.cs` so the toggle it synthesizes is the
       keystroke a real keyboard sends: set `Unicode` on the `InputEventKey` (backtick is 96)
       alongside the keycodes. As written the event carries no unicode, so a focused `LineEdit`
       never treats it as text and the test cannot observe the leak FR-011 exists to prevent. Then
@@ -651,7 +651,7 @@ names `scripts/verify.sh` as the gate for every task.
       `LineEdit` consumes printable keys during GUI input, before `_UnhandledKeyInput` is reached,
       which would leave the console unclosable by its own toggle key (FR-009, US2/AC1).
       per FR-011, FR-028e, SC-016 (partial)
-- [ ] T077 Make `ConsoleIsVisibleWithinASingleDisplayedFrame` in
+- [X] T077 Make `ConsoleIsVisibleWithinASingleDisplayedFrame` in
       `tests/Game.Tests/ConsoleInputTest.cs` actually assert SC-007: it currently waits two
       `process_frame` signals before asserting and is otherwise a duplicate of
       `ToggleOpensAndClosesTheConsole`, so nothing measures the open latency. Assert the console is

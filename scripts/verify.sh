@@ -56,7 +56,24 @@ stage_style() {
 }
 
 stage_core_tests() {
-    dotnet test tests/Core.Tests/NewGame1.Core.Tests.csproj
+    local output
+    output="$(dotnet test tests/Core.Tests/NewGame1.Core.Tests.csproj 2>&1)"
+    local exit_code=$?
+    echo "${output}"
+
+    if (( exit_code != 0 )); then
+        return "${exit_code}"
+    fi
+
+    # FR-028f: mirror the Godot test stage's anti-vacuity check below — a run that discovers
+    # and executes zero tests must not pass silently just because dotnet test's exit code is 0.
+    local passed
+    passed="$(grep -oP 'Passed:\s*\K[0-9]+' <<< "${output}" | tail -1)"
+    if [[ -z "${passed}" ]] || (( passed == 0 )); then
+        echo "verify.sh: Core test stage reported no passed tests (Passed: ${passed:-none found})" >&2
+        return 1
+    fi
+    return 0
 }
 
 stage_godot_tests() {

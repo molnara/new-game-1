@@ -41,7 +41,13 @@ public partial class DevConsole : CanvasLayer
         SetOpen(false);
     }
 
-    public override void _UnhandledKeyInput(InputEvent @event)
+    // The toggle is handled here, in _Input, rather than _UnhandledKeyInput: _Input runs before
+    // Control/GUI input, so it sees the key before a focused LineEdit does. Handling it in
+    // _UnhandledKeyInput instead would leave the console unclosable by its own toggle key
+    // whenever the input field has focus — a focused LineEdit consumes a printable key (backtick
+    // included) as text during GUI input and marks the event handled before it ever reaches
+    // _UnhandledKeyInput (FR-009, FR-011, US2/AC1).
+    public override void _Input(InputEvent @event)
     {
         if (@event.IsActionPressed("console_toggle"))
         {
@@ -51,10 +57,11 @@ public partial class DevConsole : CanvasLayer
             {
                 SetOpen(!_panel.Visible);
             }
-
-            return;
         }
+    }
 
+    public override void _UnhandledKeyInput(InputEvent @event)
+    {
         if (!_panel.Visible || @event is not InputEventKey { Pressed: true } key)
         {
             return;
