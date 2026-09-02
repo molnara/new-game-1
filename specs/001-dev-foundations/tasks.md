@@ -397,7 +397,7 @@ it stops at that stage, names it, and exits non-zero.
       The golden stage is the last one whose failure path is otherwise never exercised — the same
       shape as the two gates research R13 and R14 caught passing vacuously, which is why it is tested
       rather than assumed. Depends on T051.
-- [ ] T053 [US4] Measure a warm `scripts/verify.sh` run (assets imported, shaders compiled) and
+- [X] T053 [US4] Measure a warm `scripts/verify.sh` run (assets imported, shaders compiled) and
       confirm it completes in under 5 minutes; record the cold-run figure separately (SC-004). Depends
       on T052.
 

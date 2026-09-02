@@ -564,6 +564,36 @@ the path, and the presence or absence of the `.uid` file, matter.
 
 ---
 
+## R16. `verify.sh` timing — warm vs. cold (spike-verified)
+
+SC-004 sets a 5-minute budget for a **warm** run (assets already imported, shaders already
+compiled) and asks for the cold-run figure to be recorded separately (CHK012). Measured on
+2026-09-02, container build machine, all six stages passing:
+
+| Run | Wall time | Notes |
+|---|---|---|
+| Warm (repeated) | ~7.0 s (6.98 s, 7.00 s) | `.godot/imported`, `.godot/shader_cache` and the Mesa shader cache already populated from a prior run. |
+| Cold | 7.6 s | `.godot/imported`, `.godot/shader_cache` and `~/.cache/mesa_shader_cache` deleted immediately beforehand, forcing Godot to re-import and recompile on the stage that first launches it. |
+
+Cold and warm are barely distinguishable at this point in the project: the only importable asset
+is the built-in `icon.svg`, and the two Godot invocations (`stage_godot_tests`,
+`stage_screenshot`) render one near-empty scene, so there is almost nothing to import or compile.
+CLAUDE.md's warning that "first run after new assets is slow" describes a cost this feature
+hasn't incurred yet — it will show up once US5 and later content add real assets and shaders, at
+which point this measurement should be redone rather than trusted as a permanent figure.
+
+Both figures sit far inside the 5-minute (300 s) SC-004 budget — about 40x headroom on the warm
+run. No optimization work is warranted.
+
+**Method note**: the cold measurement destroys and lets Godot regenerate `.godot/imported`,
+`.godot/shader_cache` and the host Mesa shader cache — all gitignored/host-local, safe to clear.
+`godot --headless --import` after clearing left one stray untracked `tests/golden/main.png.import`
+(the golden reference is under `res://` with no `.gdignore`, so a full project scan treats it as
+an importable resource even though nothing loads it as one); that file was deleted rather than
+committed, since normal `verify.sh` runs never invoke a full `--import` scan and don't produce it.
+
+---
+
 ## Remaining unknowns
 
 No `NEEDS CLARIFICATION` markers remain in the Technical Context.
