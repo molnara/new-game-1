@@ -73,7 +73,15 @@ public partial class ScreenshotHarness : Node
             return;
         }
 
-        _logger?.LogInformation("Screenshot harness wrote {Path}", result.Path);
+        if (result.Replaced)
+        {
+            _logger?.LogInformation("Screenshot harness replaced existing screenshot {Path}", result.Path);
+        }
+        else
+        {
+            _logger?.LogInformation("Screenshot harness wrote {Path}", result.Path);
+        }
+
         GD.Print(result.Path);
         GetTree().Quit(0);
     }

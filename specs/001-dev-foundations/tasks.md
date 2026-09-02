@@ -517,7 +517,7 @@ trimming — nothing else depends on it.
       `src/Game/Infrastructure`.
 - [X] T070 Confirm every `*.cs.uid` Godot generated beside a new script is staged rather than dropped
       — `git status --short` should show one per Game-side `.cs` file and none ignored (research R15).
-- [ ] T071 Run [quickstart.md](./quickstart.md) end to end, all five stories, and read the screenshot
+- [X] T071 Run [quickstart.md](./quickstart.md) end to end, all five stories, and read the screenshot
       it produces. Time a cold walkthrough as part of it — open the console, run `help`, produce a
       screenshot, using nothing but `help` and no source or docs — and confirm it takes under 2
       minutes (SC-001). Then run `scripts/verify.sh` and confirm a clean pass — the constitution's
