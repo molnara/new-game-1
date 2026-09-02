@@ -8,6 +8,16 @@
 
 **Input**: User description: "Developer foundations: the game has structured file logging, an in-game dev console toggled with backtick that lists and runs commands, a screenshot harness for headless verification, and a verify script that runs build, tests, and a screenshot. A developer can open the console, type help, see commands, run \"screenshot main\", and find the PNG in artifacts/. Logs from a play session are readable in the user data logs folder after quitting."
 
+## Clarifications
+
+### Session 2026-09-01
+
+- Q: When the game is killed abruptly, how much of the most recent log output is acceptable to lose in exchange for logging that never stalls a frame? → A: Flush warnings and errors to disk immediately; batch debug and information entries, flushing them on a short interval and at shutdown.
+- Q: Should this feature build the placeholder scene the screenshot harness and verify script capture, or does a real game scene arrive separately? → A: This feature ships a minimal placeholder main scene (flat background plus an identifying label) as the capture target, to be replaced by the first real scene.
+- Q: In a headless run, what should the harness wait for before capturing, so the image is not taken while the scene is still blank? → A: Wait for a fixed, configurable number of fully rendered frames (machine-speed independent), then capture.
+- Q: If a build is exported and given to another person, should the developer console still be in it? → A: Present in all builds and never compiled out, but in a distributed build it opens only when explicitly enabled by a launch flag or setting.
+- Q: Should verification stand up an engine-based test tier now, or run only the fast engine-free tests? → A: Fast engine-free tests only for now; the verification command is structured so an engine tier can be added as a later stage without restructuring.
+
 ## User Scenarios & Testing *(mandatory)*
 
 The user of this feature is the developer working on the game (and any automated agent acting on
@@ -37,8 +47,8 @@ that session. Delivers value on its own: sessions become reviewable after the fa
 2. **Given** a session is in progress, **When** a system reports an event, **Then** the resulting
    log entry records the time, the severity, the reporting system, and the message.
 3. **Given** the game exits because of an unhandled failure, **When** the developer opens the
-   session log afterwards, **Then** the entries written before the failure are present and the
-   failure itself is recorded with its details.
+   session log afterwards, **Then** the failure is recorded with its details, and every warning and
+   error reported before it is present.
 4. **Given** many sessions have been run, **When** the developer opens the logs folder, **Then**
    session logs are individually identifiable by start time and only a bounded number of recent
    sessions are retained.
@@ -121,6 +131,8 @@ window.
 6. **Given** the capture cannot be completed, **When** it is invoked, **Then** it reports failure
    with the reason, records the reason in the session log, and leaves no empty or partial image
    file behind.
+7. **Given** a fresh checkout with no real game scene yet, **When** a capture is requested, **Then**
+   it succeeds against the placeholder scene, so the harness is provable before any gameplay exists.
 
 ---
 
@@ -167,14 +179,16 @@ and confirm it stops at that stage, names it, and returns failure.
   must not freeze the game or make the console unreadable; console history is bounded.
 - **Console used in a headless run**: a capture or command invoked where there is no console UI must
   still work through the non-interactive path.
-- **Capture requested with nothing rendered yet**: requesting a screenshot before the first frame is
-  drawn must fail with a clear reason rather than writing a blank or zero-byte file.
+- **Capture requested with nothing rendered yet**: a capture waits for its configured frame count
+  first. If those frames cannot be produced at all, it must fail with a clear reason rather than
+  writing a blank or zero-byte file.
 - **Log destination unwritable**: if the logs folder cannot be created or written (permissions, full
   disk), the game must report this on the terminal and keep running rather than failing to start.
 - **Two sessions at once**: two copies of the game running simultaneously must not write to the same
   session log file or corrupt one another's records.
-- **Abrupt termination**: a session killed without a clean shutdown must still leave the entries
-  written up to that point readable on disk.
+- **Abrupt termination**: a session killed without a clean shutdown must still leave every warning
+  and error it had reported readable on disk; at most the most recent unflushed batch of debug and
+  information entries may be missing.
 - **Invalid screenshot name**: a name containing path separators or otherwise unusable characters
   must be rejected with a clear message, and must not write outside `artifacts/`.
 
@@ -194,8 +208,9 @@ and confirm it stops at that stage, names it, and returns failure.
 - **FR-004**: Any part of the game MUST be able to obtain a logger already labelled with that
   part's own system name, so every entry is attributable to its source without the author
   restating that name in each message.
-- **FR-005**: Log entries MUST be readable on disk after the game exits, including entries written
-  before an abnormal termination.
+- **FR-005**: Log entries MUST be readable on disk after the game exits. Warning and error entries
+  MUST reach disk as they occur so they survive an abnormal termination; debug and information
+  entries MAY be batched, and MUST be written on a short recurring interval and at shutdown.
 - **FR-006**: The system MUST retain a bounded number of recent session logs and remove older ones
   automatically, so the logs folder does not grow without limit.
 - **FR-007**: When the game runs without a display, log entries MUST also appear on the standard
@@ -207,6 +222,10 @@ and confirm it stops at that stage, names it, and returns failure.
 
 - **FR-009**: The game MUST provide an in-game console that opens and closes on a single key press,
   bound by default to backtick and remappable, available from any scene without restarting.
+- **FR-009a**: The console MUST be present in every build rather than omitted from some of them, so
+  no system needs a different version of its command registration per kind of build. In a build made
+  for distribution the console MUST stay unopenable unless explicitly enabled by a launch flag or
+  setting, so a player cannot stumble into it.
 - **FR-010**: The console MUST present a scrollable output history and a single-line input field,
   and MUST take keyboard focus while open so gameplay does not react to typing.
 - **FR-011**: Opening the console MUST NOT insert the toggle key's character into the input field.
@@ -240,14 +259,19 @@ and confirm it stops at that stage, names it, and returns failure.
 - **FR-025**: Names that are not usable as a plain file name, or that would write outside
   `artifacts/`, MUST be rejected with a clear message and no file written.
 - **FR-026**: Capture MUST be invocable from the command line without any human interaction and
-  without a display or GPU, and MUST signal success or failure to its caller.
+  without a display or GPU, and MUST signal success or failure to its caller. Before capturing it
+  MUST wait for a fixed, configurable number of fully rendered frames — a frame count, never a
+  wall-clock delay — so the result does not depend on how fast or how loaded the machine is.
 - **FR-027**: A failed capture MUST report the reason and MUST NOT leave an empty or partially
   written image behind.
 
 #### Verification
 
-- **FR-028**: The project MUST provide a single command that runs, in order: the build, the test
-  suites, and a screenshot capture.
+- **FR-028**: The project MUST provide a single command that runs, in order: the build, the
+  engine-free test suite, and a screenshot capture.
+- **FR-028a**: Verification MUST be structured so that further stages — notably an engine-based test
+  tier, once anything needs one — can be inserted as additional stages without reworking the
+  command or its reporting.
 - **FR-029**: Verification MUST print a per-stage pass or fail summary and the path of the captured
   screenshot.
 - **FR-030**: Verification MUST stop at the first failing stage, name that stage, and surface enough
@@ -256,6 +280,15 @@ and confirm it stops at that stage, names it, and returns failure.
   automated caller can branch on.
 - **FR-032**: Verification MUST run to completion unattended on a machine with no display and no
   GPU.
+
+#### Capture target
+
+- **FR-033**: The project MUST include a minimal placeholder main scene whose only purpose is to be
+  something to photograph: a flat background and a visible label identifying the build. It MUST
+  contain no gameplay.
+- **FR-034**: The placeholder scene MUST be what the screenshot harness and the verification command
+  capture by default, and MUST be replaceable by the first real game scene without changing either
+  of them.
 
 ### Key Entities
 
@@ -282,9 +315,11 @@ and confirm it stops at that stage, names it, and returns failure.
   available commands, and produce a screenshot file in under 2 minutes, without reading source code
   or documentation beyond `help`.
 - **SC-002**: 100% of completed play sessions leave a readable session log file covering startup
-  through shutdown; sessions terminated abruptly leave the entries written up to that point.
+  through shutdown; a session killed abruptly retains 100% of the warnings and errors it had
+  reported before the kill.
 - **SC-003**: Screenshot capture invoked with no display available succeeds in 10 out of 10
-  consecutive attempts, each producing a non-empty image at the expected dimensions.
+  consecutive attempts, each producing a non-empty image at the expected dimensions showing the
+  drawn scene rather than a blank frame — including on a heavily loaded machine.
 - **SC-004**: The single verification command returns a definitive overall pass or fail with no
   manual steps, and completes in under 5 minutes on the development machine.
 - **SC-005**: When verification fails, the stage at fault is identifiable from its output alone in
@@ -309,11 +344,12 @@ reversible decision, recorded here so planning can challenge it.
 - **`screenshot main` semantics**: the argument names the output file (yielding `artifacts/main.png`)
   and the capture is of whatever is currently on screen. It is not a request to load a scene called
   "main" before capturing.
-- **A capture target exists**: because the project currently has no scene to photograph, a minimal
-  placeholder main scene is in scope as the thing the screenshot harness and verification command
-  capture. It carries no gameplay.
-- **Console availability**: the console is present in development builds. Whether it ships in a
-  distributed release build is deferred; nothing in this feature depends on the answer.
+- **The placeholder scene is disposable**: it exists only so the harness has something to capture
+  (FR-033, FR-034) and is expected to be deleted outright once a real scene exists. Nothing may
+  build on it, and its appearance is not worth debating.
+- **Console availability**: no longer deferred — see Clarifications and FR-009a. The console ships
+  everywhere and is gated at the point of opening rather than at the point it is built, which keeps
+  one code path for every system that registers a command.
 - **Log retention**: the ten most recent session logs are kept. The number is a configurable
   default, not a fixed rule.
 - **Default severity threshold**: information and above in ordinary runs, with debug enabled by
@@ -326,8 +362,9 @@ reversible decision, recorded here so planning can challenge it.
   name replaces the previous one so the latest evidence is always at a predictable path.
 - **`artifacts/` is disposable**: it is not tracked in version control and may be deleted at any
   time; nothing may depend on its contents surviving.
-- **Verification stages**: build, then all test suites, then one screenshot. Adding stages later is
-  expected; the order and fail-fast behavior are the fixed part.
+- **Verification stages**: build, then the engine-free test suite, then one screenshot. An
+  engine-based tier is deliberately absent until something needs it (see Clarifications); the stage
+  order and the fail-fast behavior are the fixed part, the stage list is not.
 - **Environment**: development happens without a GPU or real display, so every automated path must
   work under software rendering, and this feature must not assume a windowed session.
 - **Golden-image comparison is not part of this feature**: the harness captures evidence; comparing
@@ -343,6 +380,8 @@ reversible decision, recorded here so planning can challenge it.
   commands as it is built.
 - A graphical log viewer, in-game log overlay, or filtering UI. Logs are read as files.
 - Video or animated capture, and capture of anything other than the rendered view.
+- An engine-based test tier. Nothing in this feature needs one, so the test project for it is not
+  created here; verification is built to accept it as a stage when it arrives.
 - Continuous integration configuration. The verification command is what such a system would call;
   wiring it up is separate.
 - Performance profiling, frame-time overlays, or metrics collection.
