@@ -311,7 +311,7 @@ The headless path is independently valuable and does not need the console.
       as a PNG into `artifacts/` (FR-020), creating the folder if absent (FR-023); on any failure leave **no** empty or partial file behind — write to a temporary path and
       move into place (FR-027). A missing viewport texture (the `--headless` case) fails with that
       reason rather than producing a blank image (research R1). Depends on T038.
-- [ ] T042 [US3] Create `src/Game/Autoloads/ScreenshotHarness.cs` — inert unless `--screenshot <name>`
+- [X] T042 [US3] Create `src/Game/Autoloads/ScreenshotHarness.cs` — inert unless `--screenshot <name>`
       arrives via `OS.GetCmdlineUserArgs()` (research R5). When it does, wait a **fixed, configurable
       number of fully rendered frames** — a frame count, never a wall-clock delay (FR-026) — then
       capture through `IScreenshotService` and quit with a status. If those frames cannot be produced
