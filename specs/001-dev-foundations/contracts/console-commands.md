@@ -74,7 +74,46 @@ is replaced, and the result message says so (FR-024).
 
 ---
 
+## `perf`
+
+| | |
+|---|---|
+| **Usage** | `perf` |
+| **Summary** | Show or hide the performance overlay. |
+
+**Behavior**: toggles the overlay, which displays frame time, frames per second, draw calls, process
+memory and video memory, refreshed roughly 4 times per second showing each interval's average
+(FR-037, FR-039). Alongside each average it shows that interval's worst frame, so a brief stall is
+not smoothed away (FR-039a).
+
+**Success message**: states whether the overlay is now shown or hidden.
+
+**Guarantee**: toggling affects display only. Sampling runs from startup regardless (FR-045), so
+turning the overlay on does not start collecting and turning it off does not stop it.
+
+---
+
+## `perfstats`
+
+| | |
+|---|---|
+| **Usage** | `perfstats` |
+| **Summary** | Print the session's frame-time statistics. |
+
+**Behavior**: prints average, 95th percentile, 99th percentile and worst frame time for the session
+so far, with the sample count, without requiring the overlay to be visible (FR-043).
+
+**Low-confidence output**: when fewer than 1000 samples have been collected the output says so
+explicitly rather than presenting the percentiles as reliable (FR-044). At 60 fps that threshold is
+about 17 seconds of play.
+
+**Empty case**: before any frame has been sampled, reports that no samples exist yet rather than
+printing zeros or failing.
+
+---
+
 ## Unknown commands
+
 
 Submitting an unregistered name produces a failure naming the input and suggesting `help`
 (FR-015). The game continues running normally.

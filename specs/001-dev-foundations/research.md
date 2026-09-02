@@ -264,6 +264,90 @@ the test harness, which is precisely backwards).
 
 ---
 
+## R11. Where the profiling numbers come from (spike-verified)
+
+**Decision**: frame time is measured from the engine's own per-frame delta; draw calls and video
+memory come from Godot's `Performance` monitors; total process memory is read from
+`/proc/self/status`. FPS is *derived* from frame time, never read from the engine.
+
+**Measured in this container** (Forward+ / lavapipe, trivial scene):
+
+| Source | Value | Verdict |
+|---|---|---|
+| `Performance.RENDER_TOTAL_DRAW_CALLS_IN_FRAME` | 2 | **Use.** Works under Forward+ software Vulkan. |
+| `Performance.RENDER_VIDEO_MEM_USED` | 16,546,288 (~16.5 MB) | **Use** — this is FR-047's video memory figure. |
+| `Performance.MEMORY_STATIC` / `OS.get_static_memory_usage()` | 44,772,703 (~44.7 MB) | **Do not use as "memory".** Engine-tracked allocations only. |
+| `/proc/self/status` `VmRSS` | 510,168 kB (~510 MB) | **Use** — this is FR-047's total process memory. |
+| `OS.get_memory_info()` | `physical: 33.4 GB` | **Wrong thing.** Reports *system* RAM, not this process. An easy mistake to make from the name. |
+| `Performance.TIME_FPS` / `Engine.get_frames_per_second()` | **stuck at 1.0** across a 480-frame run | **Do not use.** See below. |
+| `Performance.TIME_PROCESS` | **0.00000** throughout | **Do not use.** Below reporting resolution here. |
+
+**The finding that vindicates the memory clarification**: engine-tracked memory reported 44.7 MB
+while the process was actually using 510 MB — an 11x gap. Had FR-047 been answered "engine-tracked
+allocations", the overlay would have serenely under-reported real memory use by an order of
+magnitude. The clarified answer (process memory *and* video memory, separately labelled) is the one
+that reflects reality.
+
+**The FPS trap**: `Performance.TIME_FPS` and `Engine.get_frames_per_second()` both read a constant
+`1.0` for an entire 480-frame run, because Godot recomputes that counter once per wall-clock second
+and the run never spanned one. Meanwhile frame time accumulated from the `delta` argument tracked
+correctly and steadily (0.88–1.07 ms average). Reading the engine's FPS monitor would therefore
+produce a plausible-looking but frozen number in exactly the short automated runs where the overlay
+is most likely to be screenshotted as evidence.
+
+**Consequence**: the sampler accumulates `delta` per frame; FPS on the overlay is `1000 / frame_ms`,
+computed from the same samples the statistics use, so the two can never disagree.
+
+**Platform note**: `/proc/self/status` is Linux-only. That is acceptable — host and container are
+both Linux — but it makes process memory an OS service, so under constitution I it is read in
+`src/Game/Infrastructure` behind a Core-declared interface, never from Core directly. It is also a
+file read, so it is sampled at the overlay's 4 Hz refresh rather than per frame.
+
+---
+
+## R12. Whole-session percentiles in bounded memory (design conflict resolved)
+
+**The conflict**: FR-041 requires statistics "for the session" — average, p95, p99, worst. FR-045a
+requires sampling to cost "no more than a fixed-size record per frame" and not to "grow without
+bound over a long session". Storing every sample to compute an exact p99 grows without bound; a ring
+buffer of the last N frames is bounded but silently changes the meaning of the statistics from
+"this session" to "the last N frames", which is not what FR-041 says.
+
+At the ~1,100 fps this container reached on a trivial scene, an hour-long session would be tens of
+millions of samples. Even at a realistic 60 fps it is 216,000 per hour, growing forever.
+
+**Decision**: accumulate a fixed-bucket histogram of frame times rather than a list of samples.
+
+| Statistic | How |
+|---|---|
+| Average | Running sum and count. Exact, two numbers. |
+| Worst frame | Running maximum. Exact, one number. |
+| p95 / p99 | Read off the histogram's cumulative counts. |
+| Sample count | The count already kept for the average, and what FR-044's 1000-sample confidence threshold tests. |
+
+Buckets of 0.1 ms from 0 to ~100 ms plus a single overflow bucket is on the order of a thousand
+counters — a few kilobytes, fixed for the life of the process regardless of session length.
+
+**Accuracy tradeoff, stated plainly**: percentiles become accurate to the bucket width (0.1 ms)
+rather than exact. For a statistic whose job is to answer "were frames consistently smooth, or were
+there stalls", 0.1 ms resolution is far finer than the question needs — a stall worth investigating
+is measured in whole milliseconds. Average and worst frame remain exact, and worst frame is the
+figure that would suffer most from bucketing, which is why it is tracked separately.
+
+**Where it lives**: entirely in `src/Core/Diagnostics` — a histogram is arithmetic with no engine
+dependency, so percentile correctness, the confidence threshold, and overflow behavior are all
+fast-tier xUnit tests (constitution II).
+
+**Alternatives considered**: keep every sample (rejected — violates FR-045a outright); ring buffer of
+recent samples (rejected — bounded, but quietly redefines FR-041's "session" statistics into
+last-N-frames statistics, which is the kind of silent divergence between spec and behavior that
+`/speckit-analyze` exists to catch); reservoir sampling (rejected — bounded and unbiased, but gives
+approximate percentiles *and* is harder to explain and test than a histogram, with no accuracy gain
+at the resolution that matters here).
+
+---
+
 ## Remaining unknowns
 
 None. No `NEEDS CLARIFICATION` markers remain in the Technical Context.
+

@@ -6,23 +6,26 @@
 
 ## Summary
 
-Deliver the four developer-facing systems the constitution already assumes exist: structured
+Deliver the four developer-facing systems the constitution already assumes exist — structured
 session logging, an in-game dev console, a screenshot harness that works without a display, and a
-one-command verification gate.
+one-command verification gate — plus a fifth added after the spec was first written: a performance
+overlay with frame-time statistics written to the session log.
 
-The technical approach keeps every decision-bearing piece engine-free. `CommandRegistry` and the
-command-line parser are plain C# in `src/Core/Console`, unit-tested with xUnit. Logging is consumed
+The technical approach keeps every decision-bearing piece engine-free. `CommandRegistry`, the
+command-line parser, and the frame-time histogram that produces the percentile statistics are plain
+C# in `src/Core`, unit-tested with xUnit. Logging is consumed
 through `Microsoft.Extensions.Logging.Abstractions` in Core and configured with Serilog (file sink
 plus a Godot sink) in `src/Game/Infrastructure`. The console and screenshot harness are code-built
 autoloads in `src/Game/Autoloads` — the console a `CanvasLayer`, the harness activated by a user
 command-line argument. Verification is a shell script chaining build, Core tests, and a captured
 screenshot compared against a golden image with ImageMagick.
 
-A spike run during planning proved the riskiest assumption in the feature and corrected it: capture
-does **not** work under `--headless`, only under `xvfb-run` with a real rendering driver. A second
-spike then established which renderer that should be: `forward_plus` through software Vulkan,
-matching the host editor, rather than the reduced `gl_compatibility` renderer. See
-[research.md](./research.md) R1 and R10 for the evidence.
+Three planning spikes corrected assumptions rather than confirming them. Capture does **not** work
+under `--headless`, only under `xvfb-run` with a real rendering driver (R1). The renderer must be
+`forward_plus` through software Vulkan, matching the host editor, not the reduced `gl_compatibility`
+one (R10). And the engine's own FPS counter reads a frozen `1.0` in short runs, so frame time must
+be accumulated from the per-frame delta instead (R11). See [research.md](./research.md) for the
+evidence behind each.
 
 ## Technical Context
 
@@ -31,7 +34,9 @@ matching the host editor, rather than the reduced `gl_compatibility` renderer. S
 **Primary Dependencies**: `Microsoft.Extensions.Logging.Abstractions` 10.0.11 (Core-facing
 abstraction), Serilog 4.4.0 + `Serilog.Extensions.Logging` 10.0.0 + `Serilog.Sinks.File` 7.0.0
 (Game-side implementation), xUnit 2.9.3 + Shouldly 4.3.0 (tests). All are already referenced in
-`NewGame1.csproj` / `NewGame1.Core.csproj`; this feature adds no new NuGet package.
+`NewGame1.csproj` / `NewGame1.Core.csproj`; this feature adds no new NuGet package, the profiling
+work included — its inputs are Godot's built-in `Performance` monitors and `/proc/self/status`
+(research R11).
 
 **System tooling**: ImageMagick 6.9.12 (`compare`, `convert`, `identify` — note: the IM7 `magick`
 wrapper is **not** installed), `xvfb-run`, Mesa llvmpipe (OpenGL 4.5 software) and Mesa lavapipe
@@ -96,11 +101,16 @@ placeholder scene. Log retention 10 sessions; console history bounded.
 | **II. Test-First, Two Tiers** | Core features ship with xUnit tests written first; the slow tier is the exception | **PASS** — registry, parser, help formatting, ring buffer and log-path policy are all Core-testable and get tests first. Engine tier deliberately absent (clarified decision, FR-028a). |
 | **III. Observability by Default** | Everything logs via `Logging.For<T>()`; `GD.Print` only in `src/Game/Infrastructure`; no swallowed errors | **PASS** — this feature *builds* that mechanism. `GD.Print`/`GD.PushError` appear only inside `GodotSink.cs` in Infrastructure. Every system added here registers at least one console command. |
 | **IV. Visual Verification** | Rendering changes verified by a screenshot that is actually read; golden images updated intentionally | **PASS** — the feature delivers the harness, and the placeholder scene gets the first golden image in `tests/golden/main.png`. |
-| **V. Simplicity** | No new framework/addon without written justification | **PASS with justification** — see Complexity Tracking. Serilog is a third-party logging library and requires an entry; it is already referenced in the repo skeleton. No DI container, no ECS, no Godot addon. |
+| **V. Simplicity** | No new framework/addon without written justification | **PASS with justification** — see Complexity Tracking. Serilog is a third-party logging library and requires an entry; it is already referenced in the repo skeleton. No DI container, no ECS, no Godot addon. The profiling story adds **no** dependency at all. |
+| **III. Observability — profiling** | Every gameplay system exposes a console command; nothing swallowed | **PASS** — the profiling system registers two commands (`perf`, `perfstats`), and its statistics are written to the same session log as everything else. |
+| **I. Core/Adapter — profiling** | Rules in Core, engine access via Core-declared interfaces | **PASS** — the frame-time histogram, percentile maths, and the 1000-sample confidence rule are pure C# in `src/Core/Diagnostics`. Reading Godot's `Performance` monitors and `/proc/self/status` is an OS/engine service, so it sits behind `IPerformanceCounters` declared in Core and implemented in `src/Game/Infrastructure`. |
 
-**Post-Phase-1 re-evaluation**: unchanged, all gates still PASS. The design added `IScreenshotService`
-as a Core-declared interface specifically to avoid an engine dependency leaking into Core, which
-strengthens gate I rather than straining it.
+**Post-Phase-1 re-evaluation**: unchanged, all gates still PASS. The design added two Core-declared
+interfaces — `IScreenshotService` and `IPerformanceCounters` — specifically to avoid engine and OS
+dependencies leaking into Core, which strengthens gate I rather than straining it. The profiling
+story reinforced gate II in particular: putting the frame-time histogram in Core means percentile
+correctness, the overflow bucket, and the 1000-sample confidence rule are all fast-tier tests, with
+only the counter reads left on the engine side.
 
 ### Scope deviation requiring the developer's attention
 
@@ -144,7 +154,10 @@ src/Core/                          # engine-free; no `using Godot`
 │   └── HelpCommand.cs             # `help` and `help <cmd>` (FR-012)
 ├── Diagnostics/
 │   ├── BoundedLog.cs              # ring buffer for console history (FR-019)
-│   └── LogRetentionPolicy.cs      # which session logs to prune (FR-006)
+│   ├── LogRetentionPolicy.cs      # which session logs to prune (FR-006)
+│   ├── FrameTimeHistogram.cs      # bounded-memory session percentiles (FR-041, FR-045a; R12)
+│   ├── FrameTimeStatistics.cs     # avg/p95/p99/worst + confidence flag (FR-042, FR-044)
+│   └── IPerformanceCounters.cs    # Core-declared engine/OS counter service
 └── Screenshots/
     ├── IScreenshotService.cs      # Core-declared engine service
     └── ScreenshotName.cs          # name validation (FR-025)
@@ -152,13 +165,15 @@ src/Core/                          # engine-free; no `using Godot`
 src/Game/
 ├── Autoloads/
 │   ├── DevConsole.cs              # code-built CanvasLayer (FR-009..FR-019)
-│   └── ScreenshotHarness.cs       # cmdline-activated capture (FR-020..FR-027)
+│   ├── ScreenshotHarness.cs       # cmdline-activated capture (FR-020..FR-027)
+│   └── PerfMonitor.cs             # always-on sampler + overlay CanvasLayer (FR-037..FR-047)
 └── Infrastructure/
     ├── Logging.cs                 # Logging.For<T>() entry point (FR-004)
     ├── GodotSink.cs               # ONLY place GD.Print/GD.PushError is allowed
     ├── WarnErrorFlushSink.cs      # immediate flush for Warning+ (FR-005)
     ├── LogPaths.cs                # user:// log dir resolution
-    └── GodotScreenshotService.cs  # IScreenshotService implementation
+    ├── GodotScreenshotService.cs  # IScreenshotService implementation
+    └── GodotPerformanceCounters.cs # Performance monitors + /proc/self/status (R11)
 
 scenes/
 └── Main.tscn                      # placeholder capture target (FR-033, FR-034)
@@ -170,7 +185,7 @@ scripts/
 
 tests/
 ├── Core.Tests/Console/            # xUnit: registry, parser, help, validation
-├── Core.Tests/Diagnostics/        # xUnit: ring buffer, retention policy
+├── Core.Tests/Diagnostics/        # xUnit: ring buffer, retention policy, histogram percentiles
 └── golden/main.png                # committed golden reference (artifacts/ is gitignored)
 ```
 

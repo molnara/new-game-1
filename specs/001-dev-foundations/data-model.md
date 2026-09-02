@@ -103,7 +103,73 @@ pruned by this policy.
 
 ---
 
+## FrameTimeHistogram
+
+Bounded-memory accumulator for a whole session's frame times (FR-041 + FR-045a; see research R12 for
+why a histogram rather than a sample list).
+
+| Field | Type | Rules |
+|---|---|---|
+| `BucketWidthMs` | `double` | Fixed at construction, default 0.1. > 0. |
+| `BucketCount` | `int` | Fixed. Covers 0 to ~100 ms; one extra overflow bucket above that. |
+| `Count` | `long` | Total samples recorded. |
+| `SumMs` | `double` | Running sum, for an exact average. |
+| `WorstMs` | `double` | Running maximum, tracked exactly rather than bucketed. |
+
+| Member | Behavior |
+|---|---|
+| `Add(double frameMs)` | Increments the matching bucket, count, sum, and max. Constant time, no allocation. |
+| `Snapshot()` | Produces a `FrameTimeStatistics` without mutating or resetting. |
+
+**Rules**: a negative or NaN sample is rejected rather than recorded. Samples above the top bucket
+land in the overflow bucket and still count toward `WorstMs` exactly, so a catastrophic stall is
+never lost to bucketing. Memory use is fixed for the life of the process regardless of session
+length — that is the entire point of the type.
+
+---
+
+## FrameTimeStatistics
+
+An immutable snapshot of a histogram. What gets written to the log and shown by `perfstats`.
+
+| Field | Type | Notes |
+|---|---|---|
+| `AverageMs` | `double` | Exact (sum / count). |
+| `P95Ms` | `double` | Read from cumulative bucket counts; accurate to bucket width. |
+| `P99Ms` | `double` | Same. |
+| `WorstMs` | `double` | Exact. |
+| `SampleCount` | `long` | What the confidence rule tests. |
+| `IsLowConfidence` | `bool` | True when `SampleCount < 1000` (FR-044). |
+| `Kind` | `Interim` \| `Final` | Distinguishes a mid-session snapshot from the end-of-session record (FR-046a). |
+
+**Validation rules**: with zero samples the statistics are still constructible and marked
+low-confidence — an empty session must not throw or divide by zero (the "overlay enabled before the
+first frame" edge case). Percentiles of an empty histogram are reported as absent, not as 0.
+
+---
+
+## IPerformanceCounters (Core-declared engine service)
+
+The seam that keeps Core engine-free while still reading engine and OS numbers (constitution I).
+
+| Member | Returns | Source (research R11) |
+|---|---|---|
+| `DrawCalls` | `long` | `Performance.RENDER_TOTAL_DRAW_CALLS_IN_FRAME` |
+| `VideoMemoryBytes` | `long` | `Performance.RENDER_VIDEO_MEM_USED` |
+| `ProcessMemoryBytes` | `long` | `/proc/self/status` `VmRSS` — **not** `OS.get_memory_info()`, which reports system RAM, and **not** `MEMORY_STATIC`, which under-reported by 11x in the spike |
+
+**Not on this interface**: frame time and FPS. Frame time comes from the engine's per-frame delta and
+FPS is derived from it as `1000 / frameMs`, because the engine's own FPS counter reads a frozen
+`1.0` in short runs (research R11). Deriving FPS from the same samples the statistics use means the
+overlay and the log can never disagree with each other.
+
+**Sampling cadence**: `ProcessMemoryBytes` reads a file, so it is polled at the overlay's 4 Hz
+refresh, never per frame.
+
+---
+
 ## ScreenshotName
+
 
 Validated capture name (FR-025).
 
@@ -128,6 +194,8 @@ Core never touches the filesystem.
 | `GodotScreenshotService` | Implements Core's `IScreenshotService` using the viewport texture. |
 | `Logging` | Static `Logging.For<T>()` entry point (FR-004). |
 | `GodotSink` | Serilog sink bridging to `GD.Print`/`GD.PushError`. The only place those calls are permitted (constitution III). |
+| `PerfMonitor` (autoload) | Samples every frame into the histogram from startup regardless of overlay visibility (FR-045), draws the overlay `CanvasLayer` at 4 Hz, and writes interim and final statistics records. |
+| `GodotPerformanceCounters` | Implements Core's `IPerformanceCounters`. |
 | `WarnErrorFlushSink` | Decorator forcing a disk flush at Warning and above (FR-005). |
 
 ---

@@ -102,6 +102,7 @@ renderer has no viewport texture (research R1). If a capture ever appears to han
 
 ## Story 4 — One-command verification
 
+
 ```bash
 scripts/verify.sh; echo "exit=$?"
 ```
@@ -127,3 +128,45 @@ scripts/screenshot.sh main && cp artifacts/main.png tests/golden/main.png
 ```
 
 Constitution IV requires a golden change to be intentional and explained in the PR description.
+
+---
+
+## Story 5 — Performance overlay and frame-time statistics
+
+**Live overlay** (needs a display, so run on the host):
+
+1. Launch the game, press backtick, type `perf`.
+2. The overlay appears with frame time, FPS, draw calls, process memory and video memory (FR-037).
+3. Values refresh about 4 times a second, each showing that interval's average plus its worst frame
+   (FR-039, FR-039a) — readable, not a blur.
+4. Type `perf` again to hide it. Type `perfstats` to print the numbers with the overlay hidden
+   (FR-043).
+
+**Statistics in the log** (works in the container):
+
+```bash
+timeout 30 xvfb-run -a godot --rendering-method forward_plus --rendering-driver vulkan \
+  --audio-driver Dummy --quit-after 600
+LOGDIR=~/.local/share/godot/app_userdata/"new game 1"/logs
+grep -i "frame" "$(ls -t "$LOGDIR"/session-*.log | head -1)"
+```
+
+**Expect**: interim statistics records during the run and one final record at shutdown, visibly
+distinguishable (FR-046, FR-046a), each carrying average, p95, p99, worst and a sample count.
+
+**Prove sampling does not depend on the overlay** (FR-045): the run above never opened the console,
+and must still produce statistics.
+
+**Prove crash-survival** (FR-046b): start the game, `kill -9` it after a few seconds, and confirm the
+most recent interim record is on disk despite no clean shutdown.
+
+**Prove the confidence rule** (FR-044): a run of well under 1000 frames must still write a record,
+marked low-confidence, rather than reporting a confident-looking p99.
+
+> **Do not read container frame times as game performance.** This container renders through Mesa's
+> software rasterizers, so the numbers describe llvmpipe on the build machine, not your game. What
+> these checks verify is that sampling, percentiles, record-writing and crash-survival all work.
+> Absolute performance figures have to come from the host. See the plan's *Measurement validity*
+> constraint — and note the container reached ~1,100 fps on a trivial scene during the spike, which
+> is exactly the kind of meaningless-but-impressive number this warning exists to head off.
+
