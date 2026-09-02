@@ -88,6 +88,13 @@ public static class Logging
     public static ILogger<T> For<T>() => Factory.CreateLogger<T>();
 
     /// <summary>
+    /// Like <see cref="For{T}"/>, but yields <c>null</c> instead of throwing when
+    /// <see cref="Initialize"/> has not run. For callers on a cleanup or failure path, where a
+    /// missing logger must not become a second, louder failure than the one being reported.
+    /// </summary>
+    public static ILogger<T>? TryFor<T>() => _factory?.CreateLogger<T>();
+
+    /// <summary>
     /// Registers the <c>loglevel</c> command (FR-003) — every system here exposes at least one
     /// console command (constitution III), and logging otherwise has none.
     /// </summary>

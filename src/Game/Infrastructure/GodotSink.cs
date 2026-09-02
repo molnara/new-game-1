@@ -6,8 +6,8 @@ namespace NewGame1.Infrastructure;
 
 /// <summary>
 /// Serilog sink bridging entries to <c>GD.Print</c>/<c>GD.PushError</c> so they also appear on
-/// the terminal in a headless run (FR-007). The only file in the repository permitted to call
-/// those (constitution III).
+/// the terminal in a headless run (FR-007). One of only two files permitted to call those
+/// (constitution III); <see cref="ProcessOutput"/> is the other.
 /// </summary>
 public sealed class GodotSink : ILogEventSink
 {

@@ -630,12 +630,12 @@ names `scripts/verify.sh` as the gate for every task.
 
 ## Phase 9: Convergence
 
-- [ ] T073 CRITICAL — remove `GD.Print`/`GD.PrintErr` from
+- [X] T073 CRITICAL — remove `GD.Print`/`GD.PrintErr` from
       `src/Game/Autoloads/ScreenshotHarness.cs` (lines 85 and 92), which sit outside
       `src/Game/Infrastructure`. Route the captured path and the failure reason through an
       Infrastructure seam instead, keeping the current stdout/stderr behaviour that
       `scripts/screenshot.sh` surfaces on failure. per Constitution III (contradicts)
-- [ ] T074 CRITICAL — replace the empty catch body in
+- [X] T074 CRITICAL — replace the empty catch body in
       `src/Game/Infrastructure/GodotScreenshotService.cs` `TryDelete` (lines 77-79) with a logged
       explanation of the failed temp-file cleanup. Constitution III prohibits empty catch blocks;
       a leaked `.tmp` in `artifacts/` currently disappears silently. per Constitution III

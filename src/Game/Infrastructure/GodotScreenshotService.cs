@@ -1,4 +1,5 @@
 using Godot;
+using Microsoft.Extensions.Logging;
 using NewGame1.Core.Screenshots;
 
 namespace NewGame1.Infrastructure;
@@ -65,6 +66,9 @@ public sealed class GodotScreenshotService : IScreenshotService
         return ScreenshotCaptureResult.Success(finalPath, replaced);
     }
 
+    // Best-effort cleanup of the temp file after a capture that already failed. The caller is being
+    // told why the capture failed and that reason must survive, so this cannot throw or return —
+    // but a leaked '.tmp' in artifacts/ must not vanish silently either (constitution III).
     private static void TryDelete(string path)
     {
         try
@@ -76,6 +80,10 @@ public sealed class GodotScreenshotService : IScreenshotService
         }
         catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
         {
+            Logging.TryFor<GodotScreenshotService>()?.LogWarning(
+                ex,
+                "Could not delete the temporary screenshot file {Path} after a failed capture; it is left behind",
+                path);
         }
     }
 }

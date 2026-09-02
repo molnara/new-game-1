@@ -73,6 +73,14 @@ public partial class ScreenshotHarness : Node
             return;
         }
 
+        if (result.Path is null)
+        {
+            // A success carrying no path cannot be reported to the caller, and reporting nothing
+            // would be exactly the silent failure SC-009 forbids.
+            Fail("Screenshot capture reported success without a path.");
+            return;
+        }
+
         if (result.Replaced)
         {
             _logger?.LogInformation("Screenshot harness replaced existing screenshot {Path}", result.Path);
@@ -82,14 +90,14 @@ public partial class ScreenshotHarness : Node
             _logger?.LogInformation("Screenshot harness wrote {Path}", result.Path);
         }
 
-        GD.Print(result.Path);
+        ProcessOutput.WriteLine(result.Path);
         GetTree().Quit(0);
     }
 
     private void Fail(string reason)
     {
         _logger?.LogError("Screenshot harness capture failed: {Reason}", reason);
-        GD.PrintErr($"screenshot failed: {reason}");
+        ProcessOutput.WriteErrorLine($"screenshot failed: {reason}");
         GetTree().Quit(1);
     }
 
