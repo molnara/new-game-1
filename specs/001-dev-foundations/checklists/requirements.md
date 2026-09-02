@@ -13,8 +13,8 @@
 
 ## Requirement Completeness
 
-- [ ] No [NEEDS CLARIFICATION] markers remain
-- [ ] Requirements are testable and unambiguous
+- [x] No [NEEDS CLARIFICATION] markers remain
+- [x] Requirements are testable and unambiguous
 - [x] Success criteria are measurable
 - [x] Success criteria are technology-agnostic (no implementation details)
 - [x] All acceptance scenarios are defined
@@ -79,10 +79,32 @@ compile time") were reworded to keep the *no implementation details* item honest
 - **Success criteria measurable**: still passing. SC-011 (5 seconds to read the numbers), SC-012
   (findable in one search), and SC-013 (under 1 ms of distortion) are all checkable.
 
+### Validation record (iteration 4 — after /speckit-clarify session 2026-09-02)
+
+**Result: 14/16 → 16/16.** Both regressions from iteration 3 cleared, as predicted, and for the
+reason predicted: the three markers were answered.
+
+- **NEWLY PASSING — No [NEEDS CLARIFICATION] markers remain**: FR-045 (sampling always runs from
+  startup), FR-046 (periodic snapshots plus a final record), and FR-047 (two labelled memory
+  figures — process and video) are all resolved. Zero markers remain in the spec.
+- **NEWLY PASSING — Requirements are testable and unambiguous**: beyond the three markers, two vague
+  adjectives were quantified in the same session. FR-039's "a cadence a human can actually read"
+  became a stated ~4 Hz refresh, and FR-044's "fewer samples than a percentile meaningfully needs"
+  became 1000 frames. Both were unwritable as tests before and are checkable now.
+- **Consistency repairs made while integrating**: Story 5 scenario 4 had been hedged with "and frame
+  sampling was active during it" to avoid presuming FR-045's answer; with sampling now always on,
+  the hedge was removed. FR-046b was added because periodic statistics written at Information level
+  would have been batched under FR-005's flush policy and lost on exactly the abrupt kill FR-046
+  exists to survive — the decision would not have delivered what it promised without it.
+- **Requirements added by this session**: FR-039a, FR-039b, FR-045a, FR-046a, FR-046b, plus a ninth
+  Story 5 acceptance scenario and a killed-mid-run edge case.
+
 ### Recommended next step
 
-Run `/speckit-clarify` to resolve FR-045, FR-046, and FR-047 before `/speckit-tasks`. Note that
-`plan.md` predates this amendment and covers no profiling work.
+Re-run `/speckit-plan`. `plan.md` predates the profiling story entirely — it has no overlay in its
+Project Structure, no profiling row in its constitution gate table, and no research into where the
+engine's frame-time, draw-call, and memory counters come from. `/speckit-tasks` run against the
+current plan would silently generate no profiling work.
 
 ### Constitution alignment
 

@@ -18,6 +18,14 @@
 - Q: If a build is exported and given to another person, should the developer console still be in it? → A: Present in all builds and never compiled out, but in a distributed build it opens only when explicitly enabled by a launch flag or setting.
 - Q: Should verification stand up an engine-based test tier now, or run only the fast engine-free tests? → A: Fast engine-free tests only for now; the verification command is structured so an engine tier can be added as a later stage without restructuring.
 
+### Session 2026-09-02
+
+- Q: Should frame times be measured from startup on every run, or only while the overlay is switched on? → A: Always sample, from startup, in every build, so every session's log has statistics whether or not the overlay was opened.
+- Q: When should frame-time statistics be written to the log — only at shutdown, or repeatedly during the session? → A: A periodic snapshot during the session plus a final record at shutdown, so a crashed or killed session still leaves usable statistics.
+- Q: Which memory figure should the overlay and log report? → A: Two labelled figures — total process memory and video memory — so both runaway allocation and texture/mesh bloat are visible.
+- Q: How often should the overlay refresh its numbers? → A: About 4 times per second, showing each interval's average, with that interval's worst frame displayed separately so brief stalls are not averaged away.
+- Q: How many frames must a session have before its 99th-percentile figure is treated as trustworthy? → A: 1000 frames (~17 seconds at 60 fps); below that the record is still written but marked low-confidence.
+
 ## User Scenarios & Testing *(mandatory)*
 
 The user of this feature is the developer working on the game (and any automated agent acting on
@@ -188,15 +196,15 @@ statistics. Delivers value on its own: performance becomes observable both live 
 
 1. **Given** the game is running with the overlay off, **When** the developer runs the overlay
    toggle command, **Then** the overlay appears showing frame time, frames per second, draw calls,
-   and memory use, and those values update as the game runs.
+   and both memory figures, and those values update as the game runs.
 2. **Given** the overlay is visible, **When** the developer runs the toggle command again, **Then**
    the overlay disappears and nothing else about the running game changes.
 3. **Given** the overlay is visible, **When** the scene behind it is bright, dark, or busy, **Then**
    the values stay legible.
-4. **Given** a play session has ended normally and frame sampling was active during it, **When**
-   the developer opens the session log, **Then** it contains that session's average frame time,
-   95th percentile, 99th percentile, and worst single frame, as one identifiable record rather than
-   scattered prose.
+4. **Given** a play session has ended normally — whether or not the overlay was ever opened —
+   **When** the developer opens the session log, **Then** it contains that session's average frame
+   time, 95th percentile, 99th percentile, and worst single frame, as one identifiable record
+   rather than scattered prose.
 5. **Given** the developer wants the numbers without the overlay on screen, **When** they run the
    statistics command in the console, **Then** the current statistics are printed to the console.
 6. **Given** a session ran for only a handful of frames, **When** its statistics are written,
@@ -207,6 +215,9 @@ statistics. Delivers value on its own: performance becomes observable both live 
 8. **Given** an automated run with no display, **When** metrics that depend on rendering are
    unavailable or meaningless, **Then** nothing crashes and the session log still records whatever
    statistics could be gathered.
+9. **Given** one frame takes far longer than the frames around it, **When** the developer is
+   watching the overlay, **Then** that stall appears in the interval's worst-frame figure instead of
+   being smoothed away by the interval average.
 
 ---
 
@@ -241,8 +252,11 @@ statistics. Delivers value on its own: performance becomes observable both live 
 - **First-run frame spikes**: the first run after new assets pays a shader-compilation cost, which
   will dominate the worst-frame figure. The statistics must make that visible rather than quietly
   smoothing it away, so a developer is not misled into chasing a problem that only occurs once.
-- **Percentiles from too few samples**: a session shorter than the samples a percentile needs must
-  still produce a record, marked as low-confidence, rather than reporting a confident wrong number.
+- **Percentiles from too few samples**: a session of fewer than 1000 frames must still produce a
+  statistics record, marked low-confidence, rather than reporting a confident-looking figure drawn
+  from a handful of frames.
+- **Session killed mid-run**: a session terminated without a clean shutdown must still leave its
+  most recent interim statistics record on disk, even though no final record was ever written.
 
 ## Requirements *(mandatory)*
 
@@ -353,11 +367,16 @@ statistics. Delivers value on its own: performance becomes observable both live 
 #### Performance overlay and frame-time statistics
 
 - **FR-037**: The game MUST be able to display a performance overlay showing, at minimum, current
-  frame time, frames per second, draw calls, and memory use, updating as the game runs.
+  frame time, frames per second, draw calls, and memory (as specified in FR-047), updating as the
+  game runs.
 - **FR-038**: The overlay MUST be toggled by a dev console command and MUST be off by default, so an
   ordinary play session is never affected by it.
-- **FR-039**: Overlay values MUST update at a cadence a human can actually read, and MUST stay
-  legible over any scene content behind them.
+- **FR-039**: The overlay MUST refresh roughly 4 times per second (about every 250 ms), showing
+  values averaged over each interval rather than raw per-frame numbers, which change too fast to
+  read.
+- **FR-039a**: Alongside each interval's average, the overlay MUST show the worst single frame
+  within that interval, so a brief stall is visible rather than averaged away.
+- **FR-039b**: Overlay values MUST stay legible over any scene content behind them.
 - **FR-040**: Enabling the overlay MUST NOT meaningfully distort the measurements it reports: its
   own cost MUST stay under 1 millisecond of frame time.
 - **FR-041**: The system MUST record frame-time statistics for the session — average, 95th
@@ -366,22 +385,27 @@ statistics. Delivers value on its own: performance becomes observable both live 
   searching the log file, and MUST state the number of samples they were computed from.
 - **FR-043**: A console command MUST print the current statistics on demand, without requiring the
   overlay to be visible.
-- **FR-044**: Statistics computed from fewer samples than a percentile meaningfully needs MUST be
-  reported as low-confidence rather than omitted or presented as reliable.
-- **FR-045**: Frame sampling MUST be [NEEDS CLARIFICATION: always running from startup, so every
-  session logs statistics whether or not the developer thought to enable anything — or only running
-  while the overlay is enabled, so sessions where it was never toggled produce no statistics? The
-  first guarantees the log is always useful but pays a small cost in every session including
-  shipped builds; the second costs nothing but means the data is missing exactly when a developer
-  did not anticipate needing it.]
-- **FR-046**: Statistics MUST be written to the log [NEEDS CLARIFICATION: only once at shutdown, or
-  also at a recurring interval during the session? Shutdown-only is simpler and produces one clean
-  record, but a session that crashes or is killed — precisely the session worth investigating —
-  would leave no statistics at all.]
-- **FR-047**: The memory figure shown and recorded MUST be [NEEDS CLARIFICATION: which memory does
-  the developer want — total process memory, the engine's own tracked allocations, or video memory?
-  They diverge substantially and answer different questions, and the overlay has room to show one
-  clearly rather than three ambiguously.]
+- **FR-044**: Statistics computed from fewer than 1000 frame samples MUST still be written, but
+  MUST be marked as low-confidence rather than presented as reliable. At 60 frames per second that
+  is roughly 17 seconds of play — the point at which the 99th percentile rests on about 10 samples
+  rather than on a single unlucky frame.
+- **FR-045**: Frame sampling MUST run continuously from startup in every build, whether or not the
+  overlay is visible, so every session produces statistics without the developer having to
+  anticipate needing them.
+- **FR-045a**: Because sampling is always on, it MUST cost no more than a fixed-size record per
+  frame and MUST NOT grow without bound over a long session.
+- **FR-046**: Statistics MUST be written to the session log at a recurring interval during the
+  session and once more as a final record at shutdown, so a session that crashes or is killed still
+  leaves usable statistics behind.
+- **FR-046a**: Interim statistics records MUST be distinguishable from the final end-of-session
+  record, so a reader can tell a mid-session snapshot from the summary of the whole run.
+- **FR-046b**: Statistics records MUST reach disk as they are written rather than waiting in a
+  batch. Without this, an abruptly killed session would discard the very records FR-046 exists to
+  preserve (see FR-005 for the general flush policy).
+- **FR-047**: The overlay and the logged statistics MUST report two separately labelled memory
+  figures — total process memory and video memory — rather than one unlabelled "memory" number.
+  The two catch different failures: overall allocation growth, and texture or mesh bloat on the
+  graphics device.
 
 ### Key Entities
 
@@ -401,9 +425,13 @@ statistics. Delivers value on its own: performance becomes observable both live 
   with a pass or fail outcome, plus an overall outcome and the screenshot it produced.
 - **Frame Sample**: one frame's measurement — how long the frame took, and when it was taken.
 - **Frame-Time Statistics**: an aggregate over the samples collected — average, 95th percentile,
-  99th percentile, worst single frame, and the sample count the figures rest on.
-- **Performance Overlay**: the on-screen display of current measurements, with a visible or hidden
-  state toggled from the console.
+  99th percentile, worst single frame, the sample count the figures rest on, and whether that count
+  clears the 1000-sample confidence threshold. Written both as interim snapshots during a session
+  and as one final record at shutdown; the two are distinguishable.
+- **Performance Overlay**: the on-screen display of current measurements — frame time, frames per
+  second, draw calls, process memory and video memory — refreshed on a fixed interval, with a
+  visible or hidden state toggled from the console. Its visibility does not affect whether sampling
+  happens.
 
 ## Success Criteria *(mandatory)*
 
