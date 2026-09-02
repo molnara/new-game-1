@@ -290,6 +290,14 @@ and confirm it stops at that stage, names it, and returns failure.
   capture by default, and MUST be replaceable by the first real game scene without changing either
   of them.
 
+#### Golden reference images
+
+- **FR-035**: The project MUST keep a committed reference image for each capture target, and MUST
+  provide a way to compare a fresh capture against its reference and report how many pixels differ.
+- **FR-036**: The comparison MUST pass or fail against a stated tolerance rather than demanding an
+  exact match, MUST fail when the reference is missing rather than passing by default, and MUST run
+  as a stage of the verification command.
+
 ### Key Entities
 
 - **Log Entry**: one recorded event — time, severity, reporting system, message, and optional
@@ -333,6 +341,8 @@ and confirm it stops at that stage, names it, and returns failure.
 - **SC-009**: No developer-facing failure in these systems is silent: every failure path listed in
   the acceptance scenarios produces a message the developer can read in the console, the terminal,
   or the session log.
+- **SC-010**: A change that alters what the placeholder scene looks like is caught by the
+  verification command rather than reaching a commit unnoticed.
 
 ## Assumptions
 
@@ -367,14 +377,17 @@ reversible decision, recorded here so planning can challenge it.
   order and the fail-fast behavior are the fixed part, the stage list is not.
 - **Environment**: development happens without a GPU or real display, so every automated path must
   work under software rendering, and this feature must not assume a windowed session.
-- **Golden-image comparison is not part of this feature**: the harness captures evidence; comparing
-  a capture against a stored reference image is separate work that builds on it.
+- **Golden-image comparison is in scope** (changed after the spec was first written, to match
+  Constitution IV, which requires golden reference screenshots). References are generated and
+  compared in the development container only: the Windows host renders through a different graphics
+  driver and will not reproduce container pixels, which is why the comparison uses a tolerance
+  rather than demanding an exact match.
 
 ## Out of Scope
 
 - Remote or networked log collection, log shipping, or crash reporting to an external service.
-- Automatic comparison of screenshots against golden reference images, and any diffing or approval
-  workflow around them.
+- An approval or review workflow around golden reference images. Comparing a capture against a
+  reference is in scope (FR-035, FR-036); a process for reviewing and signing off updates is not.
 - Gameplay-specific console commands. This feature delivers the console and the mechanism for
   registering commands, plus `help` and `screenshot`; each gameplay system contributes its own
   commands as it is built.
