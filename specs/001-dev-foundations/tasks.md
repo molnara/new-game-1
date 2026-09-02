@@ -351,7 +351,7 @@ it stops at that stage, names it, and exits non-zero.
 
 **Depends on**: US1–US3 (it composes them) and Phase 2 (the Godot test stage).
 
-- [ ] T047 [P] [US4] Create `scripts/compare-golden.sh` per contracts/cli-scripts.md — the
+- [X] T047 [P] [US4] Create `scripts/compare-golden.sh` per contracts/cli-scripts.md — the
       comparison half of FR-035, reporting how many pixels differ:
       `compare -metric AE` — **not** `magick compare`, which does not exist here (research R3).
       `compare` writes its metric to **stderr** and exits non-zero when images differ, so capture
