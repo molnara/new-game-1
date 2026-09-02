@@ -282,14 +282,14 @@ The headless path is independently valuable and does not need the console.
 
 ### Tests for User Story 3 (write first, confirm failing) ⚠️
 
-- [ ] T036 [P] [US3] Write `tests/Core.Tests/Screenshots/ScreenshotNameTests.cs`: empty or omitted
+- [X] T036 [P] [US3] Write `tests/Core.Tests/Screenshots/ScreenshotNameTests.cs`: empty or omitted
       falls back to the default name **`main`** — deliberately the same default `scripts/screenshot.sh`
       uses, so a no-argument capture from the console and from the command line write the one file the
       golden covers, rather than two files of which only one is checked; a name containing `/`, `\` or `..` is rejected so
       nothing can be written outside `artifacts/`; a name with characters illegal in a file name is
       rejected with a message naming the offending input; a name already ending `.png` is accepted
       without doubling the extension (FR-025).
-- [ ] T037 [P] [US3] Write `tests/Core.Tests/Screenshots/ScreenshotCommandTests.cs` against a fake
+- [X] T037 [P] [US3] Write `tests/Core.Tests/Screenshots/ScreenshotCommandTests.cs` against a fake
       `IScreenshotService`: success reports the full path (FR-022); an existing target is replaced and
       the message says so (FR-024); an invalid name is rejected **before** any capture is attempted;
       a service failure produces a failure result carrying the reason (FR-027). This is why the
