@@ -509,7 +509,7 @@ trimming — nothing else depends on it.
 - [X] T067 [P] Extend `README.md` with the "running the project" section constitution VI requires:
       how to run the game, capture a screenshot, run `scripts/verify.sh`, and where session logs land.
       The container workflow already there stays. Do not add per-folder `README` files or ADRs.
-- [ ] T068 [P] Add XML doc comments to the public `src/Core` surface only — `CommandRegistry`,
+- [X] T068 [P] Add XML doc comments to the public `src/Core` surface only — `CommandRegistry`,
       `FrameTimeHistogram`, `IScreenshotService`, `IPerformanceCounters` — and to nothing on the Game
       side (constitution VI).
 - [ ] T069 Confirm Core purity: `grep -rn "using Godot" src/Core/` returns nothing (constitution I).

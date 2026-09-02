@@ -8,16 +8,21 @@ namespace NewGame1.Core.Diagnostics;
 /// </summary>
 public sealed class FrameTimeHistogram
 {
+    /// <summary>Number of fixed-width buckets covering 0 to ~100 ms; one further overflow bucket sits above these.</summary>
     public const int BucketCount = 1000;
 
     private readonly long[] _buckets = new long[BucketCount + 1]; // + 1 overflow bucket
 
+    /// <summary>Width of each bucket in milliseconds, and thus the precision of <see cref="Snapshot"/>'s percentiles.</summary>
     public double BucketWidthMs { get; } = 0.1;
 
+    /// <summary>Total number of samples accepted by <see cref="Add"/> so far.</summary>
     public long Count { get; private set; }
 
+    /// <summary>Running sum of all accepted samples in milliseconds, used to derive the average.</summary>
     public double SumMs { get; private set; }
 
+    /// <summary>Exact largest sample accepted so far, in milliseconds, including samples in the overflow bucket.</summary>
     public double WorstMs { get; private set; }
 
     /// <summary>
