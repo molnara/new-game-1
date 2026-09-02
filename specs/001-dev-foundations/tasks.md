@@ -297,13 +297,13 @@ The headless path is independently valuable and does not need the console.
 
 ### Implementation for User Story 3
 
-- [ ] T038 [P] [US3] Create `src/Core/Screenshots/IScreenshotService.cs` — the Core-declared engine
+- [X] T038 [P] [US3] Create `src/Core/Screenshots/IScreenshotService.cs` — the Core-declared engine
       service that keeps capture out of Core while letting the command live in the registry
       (constitution I; research R8).
-- [ ] T039 [US3] Create `src/Core/Screenshots/ScreenshotName.cs` — validation returning a value object
+- [X] T039 [US3] Create `src/Core/Screenshots/ScreenshotName.cs` — validation returning a value object
       wrapping a safe bare file name; Core never touches the filesystem and never joins paths. Makes
       T036 pass.
-- [ ] T040 [US3] Create `src/Core/Screenshots/ScreenshotCommand.cs` — the `screenshot [name]` handler
+- [X] T040 [US3] Create `src/Core/Screenshots/ScreenshotCommand.cs` — the `screenshot [name]` handler
       registered against `CommandRegistry`, calling `IScreenshotService` and formatting the result per
       contracts/console-commands.md. Makes T037 pass. Depends on T038, T039, T027.
 - [ ] T041 [US3] Create `src/Game/Infrastructure/GodotScreenshotService.cs` implementing
