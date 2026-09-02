@@ -469,7 +469,7 @@ trimming — nothing else depends on it.
       each record carry the session's average, 95th percentile, 99th percentile and worst single frame
       (FR-041) as one identifiable, searchable line stating its sample count (FR-042, SC-012).
       Depends on T057, T015.
-- [ ] T061 [US5] Add the overlay to `src/Game/Autoloads/PerfMonitor.cs` — a `CanvasLayer` refreshing
+- [X] T061 [US5] Add the overlay to `src/Game/Autoloads/PerfMonitor.cs` — a `CanvasLayer` refreshing
       about 4 times per second, showing each interval's **average** alongside that interval's **worst
       single frame** so a brief stall is not smoothed away (FR-039, FR-039a), displaying frame time,
       FPS, draw calls, process memory and video memory with the two memory figures separately
