@@ -306,7 +306,7 @@ The headless path is independently valuable and does not need the console.
 - [X] T040 [US3] Create `src/Core/Screenshots/ScreenshotCommand.cs` — the `screenshot [name]` handler
       registered against `CommandRegistry`, calling `IScreenshotService` and formatting the result per
       contracts/console-commands.md. Makes T037 pass. Depends on T038, T039, T027.
-- [ ] T041 [US3] Create `src/Game/Infrastructure/GodotScreenshotService.cs` implementing
+- [X] T041 [US3] Create `src/Game/Infrastructure/GodotScreenshotService.cs` implementing
       `IScreenshotService` from the viewport texture: capture the currently rendered view and write it
       as a PNG into `artifacts/` (FR-020), creating the folder if absent (FR-023); on any failure leave **no** empty or partial file behind — write to a temporary path and
       move into place (FR-027). A missing viewport texture (the `--headless` case) fails with that
