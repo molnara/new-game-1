@@ -325,7 +325,7 @@ The headless path is independently valuable and does not need the console.
       Dummy` and `-- --screenshot <name>`, wrapped in an external `timeout`. Assert success
       **positively** — the PNG exists and is non-empty — because Godot's exit code is not trustworthy
       (research R4). Print the written path as the last stdout line. Depends on T043.
-- [ ] T045 [US3] Write `tests/Game.Tests/CaptureTimingTest.cs` (slow tier): the harness waits its
+- [X] T045 [US3] Write `tests/Game.Tests/CaptureTimingTest.cs` (slow tier): the harness waits its
       configured frame count before capturing — frame counting is the behavior under test and has no
       Core representation (FR-026). Depends on T042.
 - [ ] T046 [US3] Validate US3 against [quickstart.md](./quickstart.md) Story 3, including SC-003: ten
