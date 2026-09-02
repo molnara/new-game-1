@@ -216,12 +216,12 @@ run a listed command, confirm its output appears, press backtick and confirm gam
       `FailureReason`, with `Ok(message)` / `Fail(reason)` constructors (FR-015, FR-016).
 - [X] T026 [US2] Create `src/Core/Console/CommandLineParser.cs` — `Parse(string line)` producing
       `CommandArgs`. Makes T019 pass. Depends on T024.
-- [ ] T027 [US2] Create `src/Core/Console/CommandRegistry.cs` — `Register`, `TryResolve`, `All`, and
+- [X] T027 [US2] Create `src/Core/Console/CommandRegistry.cs` — `Register`, `TryResolve`, `All`, and
       `Execute(line)` chaining parse → resolve → invoke → `CommandResult`, catching handler
       exceptions and logging them through `ILogger<T>` (never `using Godot`). Registration is the
       whole integration for a system adding a command — no shared list, no edit to an unrelated
       system (FR-013, SC-006). Makes T020 pass. Depends on T023, T025, T026.
-- [ ] T028 [US2] Create `src/Core/Console/HelpCommand.cs` — `help` and `help <command>` registered
+- [X] T028 [US2] Create `src/Core/Console/HelpCommand.cs` — `help` and `help <command>` registered
       against the registry (FR-012). Makes T021 pass. Depends on T027.
 - [X] T029 [P] [US2] Create `src/Core/Diagnostics/BoundedLog.cs` — the ring buffer backing console
       output history, default capacity 1000, oldest discarded first, configurable through the launch
