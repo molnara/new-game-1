@@ -128,12 +128,12 @@ severity-tagged, source-tagged entries covering startup through shutdown.
 
 - [X] T011 [US1] Create `src/Core/Diagnostics/LogRetentionPolicy.cs` — a pure function over file
       names performing no I/O, returning the names to delete (FR-006). Makes T010 pass.
-- [ ] T012 [P] [US1] Create `src/Game/Infrastructure/LogPaths.cs` — resolve `user://logs/`
+- [X] T012 [P] [US1] Create `src/Game/Infrastructure/LogPaths.cs` — resolve `user://logs/`
       (research R6), create it, and mint a per-session file name that is sortable by start time and
       unique per process so two concurrent runs never share a file (FR-001, FR-001b). If the folder
       cannot be created or written, report on stdout and return a "no file" result rather than
       throwing, so the game still starts (FR-001a).
-- [ ] T013 [P] [US1] Create `src/Game/Infrastructure/GodotSink.cs` — a Serilog sink bridging to
+- [X] T013 [P] [US1] Create `src/Game/Infrastructure/GodotSink.cs` — a Serilog sink bridging to
       `GD.Print`/`GD.PushError` so entries also appear on the terminal in a headless run (FR-007).
       This is the **only** file in the repository permitted to call those (constitution III).
 - [ ] T014 [US1] Create `src/Game/Infrastructure/WarnErrorFlushSink.cs` — a decorating sink forcing a

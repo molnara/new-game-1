@@ -101,6 +101,21 @@ public class LogRetentionPolicyTests
     }
 
     [Fact]
+    public void MatchesNamesCarryingAProcessIdDisambiguator()
+    {
+        var existing = new[]
+        {
+            "session-20260101T000000000-1234.log",
+            "session-20260102T000000000-5678.log",
+        };
+
+        var toDelete = LogRetentionPolicy.SelectForDeletion(existing, keep: 1);
+
+        var expected = new[] { "session-20260101T000000000-1234.log" };
+        toDelete.ShouldBe(expected);
+    }
+
+    [Fact]
     public void EmptyInputProducesNoDeletions()
     {
         LogRetentionPolicy.SelectForDeletion(Array.Empty<string>()).ShouldBeEmpty();

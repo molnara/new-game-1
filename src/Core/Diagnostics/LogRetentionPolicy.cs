@@ -11,8 +11,8 @@ public static partial class LogRetentionPolicy
     /// <summary>
     /// Returns the session-log file names to delete: the oldest beyond <paramref name="keep"/>,
     /// ordered by the timestamp embedded in the name. Never returns a name that does not match
-    /// this project's own session-log pattern (session-&lt;yyyyMMddTHHmmssfff&gt;.log) — in
-    /// particular, never Godot's own godot.log.
+    /// this project's own session-log pattern (session-&lt;yyyyMMddTHHmmssfff&gt;[-processId].log)
+    /// — in particular, never Godot's own godot.log.
     /// </summary>
     public static IReadOnlyList<string> SelectForDeletion(IReadOnlyList<string> existing, int keep = 10)
     {
@@ -27,6 +27,6 @@ public static partial class LogRetentionPolicy
         return excess <= 0 ? [] : candidates.Take(excess).ToList();
     }
 
-    [GeneratedRegex(@"^session-(?<timestamp>\d{8}T\d{9})\.log$")]
+    [GeneratedRegex(@"^session-(?<timestamp>\d{8}T\d{9})(-\d+)?\.log$")]
     private static partial Regex SessionLogPattern();
 }
