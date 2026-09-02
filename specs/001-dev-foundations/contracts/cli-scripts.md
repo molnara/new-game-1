@@ -2,10 +2,10 @@
 
 **Feature**: 001-dev-foundations | **Plan**: [../plan.md](../plan.md)
 
-Three scripts in `scripts/`. These are the interface an automated caller — CI, or an agent working in
+Four scripts in `scripts/`. These are the interface an automated caller — CI, or an agent working in
 the container — depends on, so their exit codes and output shape are the contract.
 
-All three: `set -euo pipefail`, runnable from any working directory, no interactive prompts.
+All four: `set -euo pipefail`, runnable from any working directory, no interactive prompts.
 
 ---
 
@@ -51,7 +51,7 @@ Compares a capture against its committed reference.
 
 | Aspect | Contract |
 |---|---|
-| **threshold** | Maximum differing pixel count tolerated. Defaults to a small non-zero value. |
+| **threshold** | Maximum differing pixel count tolerated. **Defaults to 0 — an exact match** (spec FR-036). Container captures are byte-identical across runs (research R2), so the default demands exactness and catches single-pixel regressions; the argument exists for the host case, which `verify.sh` never exercises. |
 | **Exit 0** | Differing pixels ≤ threshold. |
 | **Exit non-zero** | Over threshold, dimensions differ, or golden missing. |
 | **stdout** | The differing pixel count and the threshold it was judged against. |
@@ -62,7 +62,37 @@ Compares a capture against its committed reference.
   wrapper does not exist on this machine.
 - `compare` writes its metric to **stderr** and exits non-zero when images differ. The script must
   capture stderr and must not let `set -e` abort on that expected non-zero exit.
-- A missing golden is a failure with a message saying how to generate one — never an implicit pass.
+- A missing golden is a failure with a message saying how to generate one — that message names
+  `scripts/update-golden.sh` — never an implicit pass.
+
+---
+
+## `scripts/update-golden.sh`
+
+```
+scripts/update-golden.sh [name]
+```
+
+Regenerates a capture target's committed reference from a fresh capture (spec FR-035a). This is the
+one supported way to resolve an intentional change to what is captured — replacing the placeholder
+scene under FR-034, for instance — and the command `compare-golden.sh` names when a golden is
+missing.
+
+| Aspect | Contract |
+|---|---|
+| **name** | Capture target name, matching `screenshot.sh`. Defaults to `main`. |
+| **Effect** | Captures via `screenshot.sh`, then copies the result over `tests/golden/<name>.png`. |
+| **Exit 0** | The reference was written; the path is printed. |
+| **Exit non-zero** | The capture failed; the existing reference is left untouched. |
+| **stdout** | The reference path written, and whether it replaced an existing file. |
+
+**Constraints**:
+
+- It MUST NOT run as a stage of `verify.sh`. A gate that regenerates its own expectation cannot fail
+  (spec FR-028f is the same defect class).
+- It is a regeneration command, not a review workflow — reviewing the new reference is the
+  developer's job at commit time (spec, Out of Scope).
+- Goldens are container artifacts: this script is run in the container, never on the host (research R2).
 
 ---
 
@@ -79,11 +109,11 @@ The quality gate from constitution "Development Workflow & Quality Gates".
 | # | Stage | Passes when |
 |---|---|---|
 | 1 | Build | `dotnet build` succeeds. |
-| 2 | Code style | `dotnet format NewGame1.sln --verify-no-changes --no-restore` exits 0. |
+| 2 | Code style | `dotnet format NewGame1.sln --verify-no-changes --no-restore` exits 0, against an `.editorconfig` that enforces at least one rule at `warning` or above (FR-028b, FR-028f). |
 | 3 | Core tests | `dotnet test` on the engine-free tier succeeds. |
-| 4 | Godot tests | The GoDotTest run under `xvfb-run` exits 0 **and** reports a non-zero passed count. |
+| 4 | Godot tests | The GoDotTest run under `xvfb-run` exits 0 **and** reports a non-zero passed count (FR-028f). |
 | 5 | Screenshot | `screenshot.sh` produces a non-empty PNG. |
-| 6 | Golden compare | `compare-golden.sh` is within threshold. |
+| 6 | Golden compare | `compare-golden.sh` is within threshold — 0 by default, so any pixel difference fails. |
 
 Stage 2 is required by constitution VI, and its position — immediately after build — is the order
 that section states. It also happens to be the cheap one: the build has already restored, so the

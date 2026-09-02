@@ -190,8 +190,16 @@ editor uses; capturing under `gl_compatibility` instead would add a second, avoi
 drift that grows as the real scene gains lighting and effects (research R10).
 
 ```bash
-scripts/screenshot.sh main && cp artifacts/main.png tests/golden/main.png
+scripts/update-golden.sh main
 ```
+
+That is the one supported way to update a reference (FR-035a) — it is also what `compare-golden.sh`
+names when a golden is missing. It never runs as a `verify.sh` stage: a gate that regenerates its own
+expectation cannot fail.
+
+The comparison threshold **defaults to 0**, an exact match, because repeated container captures of
+the same scene are byte-identical (research R2). So any pixel difference fails the gate, and a
+difference you intended is resolved by running the command above — not by widening the threshold.
 
 Constitution IV requires a golden change to be intentional and explained in the PR description.
 

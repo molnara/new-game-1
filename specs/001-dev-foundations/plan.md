@@ -331,7 +331,9 @@ scenes/
 
 scripts/
 ├── screenshot.sh                  # xvfb-run wrapper around the harness
-├── compare-golden.sh              # ImageMagick AE comparison under threshold
+├── compare-golden.sh              # ImageMagick AE comparison; threshold defaults to 0 (FR-036)
+├── update-golden.sh               # regenerates a committed reference (FR-035a); never a
+│                                  # verify.sh stage
 └── verify.sh                      # build -> dotnet format -> Core tests -> Godot tests
                                    # -> screenshot -> golden compare
 

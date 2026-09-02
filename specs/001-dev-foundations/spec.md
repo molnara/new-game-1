@@ -27,6 +27,42 @@
 - Q: How many frames must a session have before its 99th-percentile figure is treated as trustworthy? → A: 1000 frames (~17 seconds at 60 fps); below that the record is still written but marked low-confidence.
 - Q: Should this feature stand up the engine-based test tier, reversing the 2026-09-01 answer? → A: Yes. Both tiers ship from the start — a fast engine-free tier and a slower Godot tier — and verification runs both. **This supersedes the 2026-09-01 answer** ("fast engine-free tests only for now"), which had left node and input behavior (FR-011, SC-007) to a manual checklist run on the host.
 
+### Session 2026-09-02 (checklist gate — `checklists/pre-tasks.md`)
+
+Sixteen requirements-quality findings raised before `/speckit-tasks`. Resolutions, in checklist order:
+
+- CHK001 — FR-028 listed five verification stages while FR-036 and `contracts/cli-scripts.md`
+  required six. → FR-028 now lists the golden-comparison stage.
+- CHK002 — residue of the superseded engine-free-only gate. → swept `spec.md`, `plan.md`,
+  `quickstart.md`, `research.md` and `contracts/`; none found. Story 2's steps had already been
+  narrowed to what a human must *look at*, and `plan.md`'s single mention is the historical record of
+  the reversal. No change needed.
+- CHK003 — overlay availability unstated. → FR-038: the overlay inherits the console's availability
+  exactly.
+- CHK004/CHK005 — concurrent sessions and an unwritable log destination existed only as edge cases.
+  → promoted to FR-001a and FR-001b.
+- CHK006 — retention pruning had no stated timing. → FR-006 prunes at session start and never
+  touches a file another session holds open.
+- CHK007 — the "gate that passes without checking anything" defect lived only in the plan. →
+  FR-028f, plus a sentence in FR-028b.
+- CHK008 — two unquantified intervals. → 1 s flush (FR-005), 30 s interim statistics (FR-046), both
+  configurable.
+- CHK009 — FR-036's "stated tolerance" was never stated. → threshold defaults to **zero**: research
+  R2 measured container captures as byte-identical, and the container is the only path verification
+  runs. It stays a parameter for the host case.
+- CHK010 — "a build made for distribution" undefined. → FR-009a defines it as an exported release
+  build, distinguishable at runtime.
+- CHK011 — the sub-1 ms overlay cost was not objectively measurable. → FR-040 states the scene,
+  sample count, and comparison.
+- CHK012 — SC-004's 5-minute budget did not say which run. → warm run; cold runs measured separately.
+- CHK013 — FR-019's bound was unquantified. → 1000 lines, configurable, oldest discarded first.
+- CHK014 — FR-014 did not say which registration survives. → first wins, duplicate rejected and
+  logged, never fatal.
+- CHK015 — metrics unavailable headless were unenumerated. → FR-041a records them as explicitly
+  unavailable, never as zero.
+- CHK016 — no path existed for a legitimate golden update. → FR-035a adds a regeneration command
+  (still not a review workflow).
+
 ## User Scenarios & Testing *(mandatory)*
 
 The user of this feature is the developer working on the game (and any automated agent acting on
@@ -268,6 +304,12 @@ statistics. Delivers value on its own: performance becomes observable both live 
 - **FR-001**: The game MUST write a log file for every run into a `logs` folder inside the
   per-user application data directory, with one file per session, named so sessions are
   distinguishable and orderable by start time.
+- **FR-001a**: If the logs folder cannot be created or written — permissions, a full disk, a
+  read-only location — the game MUST report the problem on the standard output stream and continue
+  running without a session log file, rather than failing to start.
+- **FR-001b**: Two copies of the game running at the same time MUST each write their own session
+  log without sharing a file or interleaving records into one another's, so a concurrent run cannot
+  corrupt the evidence from the other.
 - **FR-002**: Every log entry MUST record, at minimum: the time it occurred, its severity, the
   system that reported it, and a human-readable message.
 - **FR-003**: The system MUST support at least four severities — debug, information, warning, and
@@ -277,9 +319,12 @@ statistics. Delivers value on its own: performance becomes observable both live 
   restating that name in each message.
 - **FR-005**: Log entries MUST be readable on disk after the game exits. Warning and error entries
   MUST reach disk as they occur so they survive an abnormal termination; debug and information
-  entries MAY be batched, and MUST be written on a short recurring interval and at shutdown.
+  entries MAY be batched, and MUST be written on a recurring interval of at most 1 second and at
+  shutdown.
 - **FR-006**: The system MUST retain a bounded number of recent session logs and remove older ones
-  automatically, so the logs folder does not grow without limit.
+  automatically, so the logs folder does not grow without limit. Pruning MUST happen at session
+  start, before the new session's file is opened, and MUST NOT remove or truncate a log file that
+  another running session holds open (FR-001b).
 - **FR-007**: When the game runs without a display, log entries MUST also appear on the standard
   output stream so an automated caller can read them live.
 - **FR-008**: Failures MUST NOT be discarded silently: an error that is handled MUST be logged with
@@ -292,7 +337,9 @@ statistics. Delivers value on its own: performance becomes observable both live 
 - **FR-009a**: The console MUST be present in every build rather than omitted from some of them, so
   no system needs a different version of its command registration per kind of build. In a build made
   for distribution the console MUST stay unopenable unless explicitly enabled by a launch flag or
-  setting, so a player cannot stumble into it.
+  setting, so a player cannot stumble into it. "A build made for distribution" means an exported
+  release build — one produced by the engine's export process rather than run from the editor or as
+  a development build — and that distinction MUST be observable at runtime rather than inferred.
 - **FR-010**: The console MUST present a scrollable output history and a single-line input field,
   and MUST take keyboard focus while open so gameplay does not react to typing.
 - **FR-011**: Opening the console MUST NOT insert the toggle key's character into the input field.
@@ -302,7 +349,9 @@ statistics. Delivers value on its own: performance becomes observable both live 
   an argument description, and the behavior to run, without that system's registration requiring
   edits to unrelated systems.
 - **FR-014**: Registering two commands under the same name MUST be reported as an error rather than
-  silently replacing the earlier one.
+  silently replacing the earlier one. The first registration MUST be retained and the duplicate
+  rejected, so which command survives does not depend on registration order. A collision MUST NOT
+  halt the game.
 - **FR-015**: Submitting an unrecognized command MUST produce a message naming the unrecognized
   input and pointing at `help`, and MUST NOT interrupt the running game.
 - **FR-016**: A command that fails MUST report the failure and its reason in the console, record it
@@ -311,7 +360,8 @@ statistics. Delivers value on its own: performance becomes observable both live 
   current session.
 - **FR-018**: Commands submitted and the results they report MUST be recorded in the session log.
 - **FR-019**: Console output history MUST be bounded so a long-running session or a chatty command
-  cannot exhaust memory.
+  cannot exhaust memory. The bound MUST be a stated, configurable number of lines — defaulting to
+  1000 — with the oldest lines discarded first.
 
 #### Screenshot capture
 
@@ -335,8 +385,8 @@ statistics. Delivers value on its own: performance becomes observable both live 
 #### Verification
 
 - **FR-028**: The project MUST provide a single command that runs, in order: the build, an automated
-  code-style check, the engine-free test suite, the engine-based test suite, and a screenshot
-  capture.
+  code-style check, the engine-free test suite, the engine-based test suite, a screenshot capture,
+  and a comparison of that screenshot against its golden reference (FR-036).
 - **FR-028a**: Verification MUST be structured so that further stages can be inserted as additional
   stages without reworking the command or its reporting. (The engine-based tier this requirement was
   originally written to accommodate is now a stage in its own right — see FR-028c — so this
@@ -354,7 +404,13 @@ statistics. Delivers value on its own: performance becomes observable both live 
 - **FR-028b**: Code style MUST be enforced by a machine check reading a checked-in configuration
   file, and that configuration MUST be the definition of the project's style — not prose in a
   document and not a reviewer's judgement. The check MUST report violations without modifying source
-  files, and MUST fail verification when any are found.
+  files, and MUST fail verification when any are found. The configuration MUST define the rules the
+  project cares about at a severity the check enforces: a configuration the check passes vacuously
+  does not satisfy this requirement (see FR-028f).
+- **FR-028f**: A verification stage MUST fail when it did not actually verify anything. A test stage
+  MUST assert that a non-zero number of tests ran rather than branching on the runner's exit code
+  alone, and the code-style stage MUST fail if its configuration enforces no rule. A stage that
+  reports success without having checked anything is a defect, not a pass.
 - **FR-029**: Verification MUST print a per-stage pass or fail summary and the path of the captured
   screenshot.
 - **FR-030**: Verification MUST stop at the first failing stage, name that stage, and surface enough
@@ -377,9 +433,17 @@ statistics. Delivers value on its own: performance becomes observable both live 
 
 - **FR-035**: The project MUST keep a committed reference image for each capture target, and MUST
   provide a way to compare a fresh capture against its reference and report how many pixels differ.
-- **FR-036**: The comparison MUST pass or fail against a stated tolerance rather than demanding an
-  exact match, MUST fail when the reference is missing rather than passing by default, and MUST run
-  as a stage of the verification command.
+- **FR-035a**: The project MUST provide a single documented command that regenerates a capture
+  target's reference image from a fresh capture, so an intentional change to what is captured — such
+  as replacing the placeholder scene under FR-034 — is resolved by re-running that command and
+  committing the result. This is a regeneration command, not a review or approval workflow.
+- **FR-036**: The comparison MUST pass or fail against a stated pixel-difference threshold, MUST
+  fail when the reference is missing rather than passing by default, and MUST run as a stage of the
+  verification command. The threshold MUST default to zero — an exact match — because references are
+  generated and compared in the development container, whose software rasterizer produces
+  byte-identical captures across runs. The threshold MUST remain an explicit parameter of the
+  comparison so a non-zero value can be supplied when comparing on the host, a path the verification
+  command does not exercise.
 
 #### Performance overlay and frame-time statistics
 
@@ -387,7 +451,9 @@ statistics. Delivers value on its own: performance becomes observable both live 
   frame time, frames per second, draw calls, and memory (as specified in FR-047), updating as the
   game runs.
 - **FR-038**: The overlay MUST be toggled by a dev console command and MUST be off by default, so an
-  ordinary play session is never affected by it.
+  ordinary play session is never affected by it. Because it is reachable only through the console,
+  the overlay inherits the console's availability exactly (FR-009a): wherever the console can be
+  opened the overlay can be toggled, and nowhere else.
 - **FR-039**: The overlay MUST refresh roughly 4 times per second (about every 250 ms), showing
   values averaged over each interval rather than raw per-frame numbers, which change too fast to
   read.
@@ -395,9 +461,16 @@ statistics. Delivers value on its own: performance becomes observable both live 
   within that interval, so a brief stall is visible rather than averaged away.
 - **FR-039b**: Overlay values MUST stay legible over any scene content behind them.
 - **FR-040**: Enabling the overlay MUST NOT meaningfully distort the measurements it reports: its
-  own cost MUST stay under 1 millisecond of frame time.
+  own cost MUST stay under 1 millisecond of frame time. This MUST be established by comparing mean
+  frame time over at least 1000 frames with the overlay visible against the same number of frames
+  with it hidden, on the placeholder scene (FR-033) under identical run conditions — a single-frame
+  or short-sample comparison is not sufficient given software-rendering variance.
 - **FR-041**: The system MUST record frame-time statistics for the session — average, 95th
   percentile, 99th percentile, and worst single frame — into the session log.
+- **FR-041a**: Where a measurement required by FR-037 or FR-047 cannot be obtained in the run's
+  environment — video memory and draw calls under a headless software-rendered run being the expected
+  cases — it MUST be reported as explicitly unavailable, in both the overlay and the logged record,
+  rather than as zero or silently omitted, so a missing figure is never mistaken for a measured one.
 - **FR-042**: Recorded statistics MUST be a single identifiable record that can be found by
   searching the log file, and MUST state the number of samples they were computed from.
 - **FR-043**: A console command MUST print the current statistics on demand, without requiring the
@@ -412,8 +485,8 @@ statistics. Delivers value on its own: performance becomes observable both live 
 - **FR-045a**: Because sampling is always on, it MUST cost no more than a fixed-size record per
   frame and MUST NOT grow without bound over a long session.
 - **FR-046**: Statistics MUST be written to the session log at a recurring interval during the
-  session and once more as a final record at shutdown, so a session that crashes or is killed still
-  leaves usable statistics behind.
+  session — a stated, configurable interval defaulting to 30 seconds — and once more as a final
+  record at shutdown, so a session that crashes or is killed still leaves usable statistics behind.
 - **FR-046a**: Interim statistics records MUST be distinguishable from the final end-of-session
   record, so a reader can tell a mid-session snapshot from the summary of the whole run.
 - **FR-046b**: Statistics records MUST reach disk as they are written rather than waiting in a
@@ -464,7 +537,9 @@ statistics. Delivers value on its own: performance becomes observable both live 
   consecutive attempts, each producing a non-empty image at the expected dimensions showing the
   drawn scene rather than a blank frame — including on a heavily loaded machine.
 - **SC-004**: The single verification command returns a definitive overall pass or fail with no
-  manual steps, and completes in under 5 minutes on the development machine.
+  manual steps, and completes in under 5 minutes on the development machine. The budget applies to a
+  warm run — assets already imported and shaders already compiled. A cold run pays one-off import and
+  shader-compilation costs and is measured separately.
 - **SC-005**: When verification fails, the stage at fault is identifiable from its output alone in
   100% of cases, without re-running individual stages to find out where it broke.
 - **SC-006**: Adding a developer command for a new system requires changes only within that system;
@@ -482,8 +557,8 @@ statistics. Delivers value on its own: performance becomes observable both live 
   draw calls, and memory within 5 seconds of opening the console, without restarting the game.
 - **SC-012**: After a completed play session, a developer can locate that session's average, 95th
   percentile, 99th percentile, and worst frame time in the log by searching it once.
-- **SC-013**: Turning the overlay on changes measured frame time by less than 1 millisecond, so the
-  act of measuring does not distort what is being measured.
+- **SC-013**: Turning the overlay on changes measured frame time by less than 1 millisecond,
+  measured as FR-040 specifies, so the act of measuring does not distort what is being measured.
 - **SC-014**: A style violation introduced into any checked-in C# source file is reported by the
   verification command, naming the file, the line, and the rule — with no source file modified by
   the check itself.
@@ -509,8 +584,15 @@ reversible decision, recorded here so planning can challenge it.
 - **Console availability**: no longer deferred — see Clarifications and FR-009a. The console ships
   everywhere and is gated at the point of opening rather than at the point it is built, which keeps
   one code path for every system that registers a command.
-- **Log retention**: the ten most recent session logs are kept. The number is a configurable
-  default, not a fixed rule.
+- **Log retention**: the ten most recent session logs are kept, pruned at session start (FR-006).
+  The number is a configurable default, not a fixed rule.
+- **Timing and size defaults**: the debug/information flush interval is 1 second (FR-005), interim
+  statistics are written every 30 seconds (FR-046), and console output history holds 1000 lines
+  (FR-019). Each is a configurable default, chosen small enough that an abrupt kill loses little and
+  large enough that none costs measurable frame time. None is a fixed rule.
+- **Distribution build**: "a build made for distribution" (FR-009a) means an exported release build,
+  distinguished at runtime from an editor or development run. No finer taxonomy of build kinds is
+  needed anywhere in this feature.
 - **Default severity threshold**: information and above in ordinary runs, with debug enabled by
   opt-in, so ordinary sessions stay readable.
 - **Log format**: plain text, one entry per line, readable directly in a text editor without
@@ -522,7 +604,8 @@ reversible decision, recorded here so planning can challenge it.
 - **`artifacts/` is disposable**: it is not tracked in version control and may be deleted at any
   time; nothing may depend on its contents surviving.
 - **Verification stages**: build, then the automated code-style check, then the engine-free test
-  suite, then the engine-based test suite, then one screenshot. The style stage was added to match
+  suite, then the engine-based test suite, then one screenshot, then the golden comparison of that
+  screenshot. The style stage was added to match
   Constitution VI ("Standards Are Automated") and the engine tier to match Constitution II
   ("Test-First, Two Tiers"), both of which make their stage a required part of the gate. The stage
   order and the fail-fast behavior are the fixed part, the stage list is not.
@@ -536,15 +619,18 @@ reversible decision, recorded here so planning can challenge it.
   are obtained, only that they are shown and are the figures a developer would expect.
 - **Golden-image comparison is in scope** (changed after the spec was first written, to match
   Constitution IV, which requires golden reference screenshots). References are generated and
-  compared in the development container only: the container rasterizes in software while the host's
-  editor uses its real GPU driver, so the two do not produce identical pixels. That is why the
-  comparison uses a tolerance rather than demanding an exact match.
+  compared in the development container only, where software rasterization is deterministic and
+  repeated captures of the same scene are byte-identical — so the comparison demands an exact match
+  by default (FR-036). The threshold stays a parameter rather than a constant only because the
+  host's editor renders through a real GPU driver and would not match byte-for-byte; the
+  verification command never runs on that path.
 
 ## Out of Scope
 
 - Remote or networked log collection, log shipping, or crash reporting to an external service.
 - An approval or review workflow around golden reference images. Comparing a capture against a
-  reference is in scope (FR-035, FR-036); a process for reviewing and signing off updates is not.
+  reference is in scope (FR-035, FR-036), as is a command that regenerates one (FR-035a); a process
+  for reviewing and signing off updates is not.
 - Gameplay-specific console commands. This feature delivers the console and the mechanism for
   registering commands, plus `help` and `screenshot`; each gameplay system contributes its own
   commands as it is built.
