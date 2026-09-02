@@ -93,7 +93,7 @@ public static class Logging
     /// </summary>
     public static void RegisterCommands(CommandRegistry registry)
     {
-        registry.Register(new CommandDescriptor(
+        registry.TryRegister(new CommandDescriptor(
             "loglevel",
             "Show or set the minimum log severity for this session.",
             "loglevel [debug|information|warning|error]",

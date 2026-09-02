@@ -31,6 +31,18 @@ public class CommandRegistryTests
     }
 
     [Fact]
+    public void TryRegisterReportsCollisionWithoutThrowingAndRetainsTheFirst()
+    {
+        var registry = new CommandRegistry();
+        registry.TryRegister(Descriptor("help", _ => CommandResult.Ok("first"))).ShouldBeTrue();
+
+        registry.TryRegister(Descriptor("help", _ => CommandResult.Ok("second"))).ShouldBeFalse();
+
+        registry.TryResolve("help", out var resolved).ShouldBeTrue();
+        resolved!.Handler(new CommandArgs("help", Array.Empty<string>())).Message.ShouldBe("first");
+    }
+
+    [Fact]
     public void UnrecognizedNameYieldsFailureNamingInputAndPointingAtHelp()
     {
         var registry = new CommandRegistry();

@@ -10,7 +10,7 @@ public partial class DevConsole : CanvasLayer
 {
     private const int HistoryCapacity = 1000;
 
-    public CommandRegistry Registry { get; } = new();
+    public CommandRegistry Registry { get; private set; } = null!;
 
     public bool IsOpen => _panel.Visible;
 
@@ -29,6 +29,7 @@ public partial class DevConsole : CanvasLayer
     {
         Logging.Initialize();
         _logger = Logging.For<DevConsole>();
+        Registry = new CommandRegistry(Logging.For<CommandRegistry>());
         ProcessMode = ProcessModeEnum.Always;
         Layer = 100;
 

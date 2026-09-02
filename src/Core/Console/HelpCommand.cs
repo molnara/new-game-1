@@ -7,7 +7,7 @@ public static class HelpCommand
 {
     public static void Register(CommandRegistry registry)
     {
-        registry.Register(new CommandDescriptor(
+        registry.TryRegister(new CommandDescriptor(
             "help",
             "List available commands, or explain one.",
             "help [command]",

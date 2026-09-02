@@ -25,6 +25,26 @@ public sealed class CommandRegistry(ILogger<CommandRegistry>? logger = null)
         }
     }
 
+    /// <summary>
+    /// Adds a command; unlike <see cref="Register"/>, a name collision is logged as an error and
+    /// reported back through the return value instead of thrown, so one subsystem's mistake can
+    /// never stop the caller's own remaining registrations or the game (FR-014). The first
+    /// registration under a name is always the one retained.
+    /// </summary>
+    public bool TryRegister(CommandDescriptor descriptor)
+    {
+        try
+        {
+            Register(descriptor);
+            return true;
+        }
+        catch (DuplicateCommandException ex)
+        {
+            _logger.LogError(ex, "Command registration rejected: {Message}", ex.Message);
+            return false;
+        }
+    }
+
     /// <summary>Case-insensitive lookup by name.</summary>
     public bool TryResolve(string name, out CommandDescriptor? descriptor) => _commands.TryGetValue(name, out descriptor);
 

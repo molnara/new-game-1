@@ -11,7 +11,7 @@ public static class ScreenshotCommand
 {
     public static void Register(CommandRegistry registry, IScreenshotService service)
     {
-        registry.Register(new CommandDescriptor(
+        registry.TryRegister(new CommandDescriptor(
             "screenshot",
             "Capture the current view to artifacts/<name>.png.",
             "screenshot [name]",

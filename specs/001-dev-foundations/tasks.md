@@ -523,7 +523,7 @@ trimming — nothing else depends on it.
       minutes (SC-001). Then run `scripts/verify.sh` and confirm a clean pass — the constitution's
       pre-completion gate for the feature as a whole.
 
-- [ ] T072 Audit SC-009 across the feature: walk every failure path named in the spec's acceptance
+- [X] T072 Audit SC-009 across the feature: walk every failure path named in the spec's acceptance
       scenarios — unwritable log destination (FR-001a), duplicate command registration (FR-014),
       unknown command (FR-015), failing command (FR-016), rejected screenshot name (FR-025), failed
       capture (FR-027), each failing verification stage (FR-030), unavailable performance metrics

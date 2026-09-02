@@ -72,13 +72,13 @@ public partial class PerfMonitor : CanvasLayer
     /// </summary>
     public void RegisterCommands(CommandRegistry registry)
     {
-        registry.Register(new CommandDescriptor(
+        registry.TryRegister(new CommandDescriptor(
             "perf",
             "Show or hide the performance overlay.",
             "perf",
             _ => HandlePerf()));
 
-        registry.Register(new CommandDescriptor(
+        registry.TryRegister(new CommandDescriptor(
             "perfstats",
             "Print the session's frame-time statistics.",
             "perfstats",
@@ -185,14 +185,17 @@ public partial class PerfMonitor : CanvasLayer
         var stats = _histogram.Snapshot(kind);
 
         _logger.LogInformation(
-            "Frame time statistics ({Kind}): average={AverageMs:F3}ms p95={P95} p99={P99} worst={WorstMs:F3}ms samples={SampleCount} lowConfidence={IsLowConfidence}",
+            "Frame time statistics ({Kind}): average={AverageMs:F3}ms p95={P95} p99={P99} worst={WorstMs:F3}ms samples={SampleCount} lowConfidence={IsLowConfidence} drawCalls={DrawCalls} processMemory={ProcessMemory} videoMemory={VideoMemory}",
             kind,
             stats.AverageMs,
             FormatPercentile(stats.P95Ms),
             FormatPercentile(stats.P99Ms),
             stats.WorstMs,
             stats.SampleCount,
-            stats.IsLowConfidence);
+            stats.IsLowConfidence,
+            FormatCount(_counters.DrawCalls),
+            FormatBytes(_counters.ProcessMemoryBytes),
+            FormatBytes(_counters.VideoMemoryBytes));
 
         Logging.FlushNow();
     }
