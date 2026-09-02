@@ -214,7 +214,7 @@ run a listed command, confirm its output appears, press backtick and confirm gam
       parser's output type from data-model.md.)
 - [X] T025 [P] [US2] Create `src/Core/Console/CommandResult.cs` — `Succeeded`, `Message`,
       `FailureReason`, with `Ok(message)` / `Fail(reason)` constructors (FR-015, FR-016).
-- [ ] T026 [US2] Create `src/Core/Console/CommandLineParser.cs` — `Parse(string line)` producing
+- [X] T026 [US2] Create `src/Core/Console/CommandLineParser.cs` — `Parse(string line)` producing
       `CommandArgs`. Makes T019 pass. Depends on T024.
 - [ ] T027 [US2] Create `src/Core/Console/CommandRegistry.cs` — `Register`, `TryResolve`, `All`, and
       `Execute(line)` chaining parse → resolve → invoke → `CommandResult`, catching handler
@@ -223,7 +223,7 @@ run a listed command, confirm its output appears, press backtick and confirm gam
       system (FR-013, SC-006). Makes T020 pass. Depends on T023, T025, T026.
 - [ ] T028 [US2] Create `src/Core/Console/HelpCommand.cs` — `help` and `help <command>` registered
       against the registry (FR-012). Makes T021 pass. Depends on T027.
-- [ ] T029 [P] [US2] Create `src/Core/Diagnostics/BoundedLog.cs` — the ring buffer backing console
+- [X] T029 [P] [US2] Create `src/Core/Diagnostics/BoundedLog.cs` — the ring buffer backing console
       output history, default capacity 1000, oldest discarded first, configurable through the launch
       flag T015 establishes rather than a mechanism of its own (FR-019). Makes T022 pass.
 - [ ] T030 [US2] Create `src/Game/Autoloads/DevConsole.cs` — a code-built `CanvasLayer` with
