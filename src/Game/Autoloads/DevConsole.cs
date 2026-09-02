@@ -18,6 +18,13 @@ public partial class DevConsole : CanvasLayer
 
     public string InputText => _input.Text;
 
+    // Exposed for GodotScreenshotService (issue #4): the screenshot command must close the
+    // console before capturing and restore its prior state afterward, without the screenshot
+    // service reaching into the panel field itself.
+    public void Open() => SetOpen(true);
+
+    public void Close() => SetOpen(false);
+
     private BoundedLog _history = null!;
     private readonly List<string> _submitted = [];
     private ColorRect _panel = null!;

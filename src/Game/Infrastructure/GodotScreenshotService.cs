@@ -1,5 +1,6 @@
 using Godot;
 using Microsoft.Extensions.Logging;
+using NewGame1.Autoloads;
 using NewGame1.Core.Screenshots;
 
 namespace NewGame1.Infrastructure;
@@ -23,45 +24,72 @@ public sealed class GodotScreenshotService : IScreenshotService
 
     public ScreenshotCaptureResult Capture(ScreenshotName name)
     {
-        var image = ((SceneTree)Engine.GetMainLoop()).Root.GetTexture()?.GetImage();
-        if (image is null)
+        var root = ((SceneTree)Engine.GetMainLoop()).Root;
+
+        // Issue #4: the console must not appear in the capture. It's a top-layer CanvasLayer
+        // that stays visible while the `screenshot` command itself is being typed and submitted,
+        // so it has to be hidden here and the hidden state force-drawn before the texture is
+        // read back — otherwise the viewport still holds the console-open frame that was last
+        // rendered. Degrades to a no-op when the autoload is absent (e.g. a future scene without
+        // it, or a unit test constructing this service directly).
+        var console = root.GetNodeOrNull<DevConsole>("DevConsole");
+        var reopenConsoleAfterCapture = console is not null && console.IsOpen;
+
+        if (reopenConsoleAfterCapture)
         {
-            return ScreenshotCaptureResult.Failure(
-                "No viewport texture is available to capture — this happens under --headless, whose " +
-                "dummy renderer has no rasterizer (research R1).");
+            console!.Close();
+            RenderingServer.ForceDraw();
         }
 
         try
         {
-            Directory.CreateDirectory(_artifactsDirectory);
-        }
-        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
-        {
-            return ScreenshotCaptureResult.Failure($"Could not create or access '{_artifactsDirectory}': {ex.Message}");
-        }
+            var image = root.GetTexture()?.GetImage();
+            if (image is null)
+            {
+                return ScreenshotCaptureResult.Failure(
+                    "No viewport texture is available to capture — this happens under --headless, whose " +
+                    "dummy renderer has no rasterizer (research R1).");
+            }
 
-        var finalPath = Path.Combine(_artifactsDirectory, name.Value);
-        var replaced = File.Exists(finalPath);
-        var tempPath = Path.Combine(_artifactsDirectory, $".{name.Value}.{Guid.NewGuid():N}.tmp");
+            try
+            {
+                Directory.CreateDirectory(_artifactsDirectory);
+            }
+            catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
+            {
+                return ScreenshotCaptureResult.Failure($"Could not create or access '{_artifactsDirectory}': {ex.Message}");
+            }
 
-        var saveError = image.SavePng(tempPath);
-        if (saveError != Error.Ok)
-        {
-            TryDelete(tempPath);
-            return ScreenshotCaptureResult.Failure($"Failed to encode screenshot: {saveError}.");
-        }
+            var finalPath = Path.Combine(_artifactsDirectory, name.Value);
+            var replaced = File.Exists(finalPath);
+            var tempPath = Path.Combine(_artifactsDirectory, $".{name.Value}.{Guid.NewGuid():N}.tmp");
 
-        try
-        {
-            File.Move(tempPath, finalPath, overwrite: true);
-        }
-        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
-        {
-            TryDelete(tempPath);
-            return ScreenshotCaptureResult.Failure($"Failed to move screenshot into place: {ex.Message}");
-        }
+            var saveError = image.SavePng(tempPath);
+            if (saveError != Error.Ok)
+            {
+                TryDelete(tempPath);
+                return ScreenshotCaptureResult.Failure($"Failed to encode screenshot: {saveError}.");
+            }
 
-        return ScreenshotCaptureResult.Success(finalPath, replaced);
+            try
+            {
+                File.Move(tempPath, finalPath, overwrite: true);
+            }
+            catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
+            {
+                TryDelete(tempPath);
+                return ScreenshotCaptureResult.Failure($"Failed to move screenshot into place: {ex.Message}");
+            }
+
+            return ScreenshotCaptureResult.Success(finalPath, replaced);
+        }
+        finally
+        {
+            if (reopenConsoleAfterCapture)
+            {
+                console!.Open();
+            }
+        }
     }
 
     // Best-effort cleanup of the temp file after a capture that already failed. The caller is being
