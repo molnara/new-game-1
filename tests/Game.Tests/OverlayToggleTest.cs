@@ -37,6 +37,16 @@ public class OverlayToggleTest : TestClass
     }
 
     [Test]
+    public void WorstCaseOverlayLineFitsInsideTheBackgroundPanel()
+    {
+        var (lineWidth, contentWidth) = _perfMonitor.MeasureWorstCaseOverlayFit();
+        lineWidth.ShouldBeLessThanOrEqualTo(
+            contentWidth,
+            $"the overlay's longest line ({lineWidth}px) must fit inside the panel's content " +
+            $"width ({contentWidth}px), or it clips past the background box (issue #2)");
+    }
+
+    [Test]
     public async Task SamplingContinuesRegardlessOfOverlayVisibility()
     {
         var registry = new CommandRegistry();

@@ -49,6 +49,25 @@ public partial class PerfMonitor : CanvasLayer
 
     public bool IsOverlayVisible => _overlayPanel.Visible;
 
+    // Test-only seam (mirrors IsOverlayVisible): lets a headless test assert the overlay's
+    // longest possible line fits inside the background panel without needing a display or a
+    // live capture (issue #2 — the panel used to be too narrow for the "Frame time" line).
+    internal (float LineWidthPx, float ContentWidthPx) MeasureWorstCaseOverlayFit()
+    {
+        // Two-digit avg/worst frame times are the widest real values this line takes; the
+        // "unavailable" fallback (FR-041a) used by the other lines is no wider.
+        const string worstCaseLine = "Frame time: 99.99 ms avg / 99.99 ms worst";
+
+        var font = _overlayLabel.GetThemeFont("font");
+        var fontSize = _overlayLabel.GetThemeFontSize("font_size");
+        var lineWidth = font.GetStringSize(worstCaseLine, fontSize: fontSize).X;
+
+        var horizontalPadding = _overlayLabel.OffsetLeft - _overlayLabel.OffsetRight;
+        var contentWidth = _overlayPanel.Size.X - horizontalPadding;
+
+        return (lineWidth, contentWidth);
+    }
+
     // Shows or hides the overlay. Sampling continues regardless (FR-045).
     public void SetOverlayVisible(bool visible)
     {
@@ -205,7 +224,10 @@ public partial class PerfMonitor : CanvasLayer
         _overlayPanel = new ColorRect { Color = new Color(0f, 0f, 0f, 0.65f), Visible = false };
         AddChild(_overlayPanel);
         _overlayPanel.SetAnchorsAndOffsetsPreset(Control.LayoutPreset.TopRight);
-        _overlayPanel.OffsetLeft = -260;
+        // Wide enough for the longest overlay line ("Frame time: {avg} ms avg / {worst} ms
+        // worst", including the "unavailable" case for memory/draw calls, FR-041a) with a
+        // safety margin for larger numbers (issue #2: text was clipped at the old 252px width).
+        _overlayPanel.OffsetLeft = -380;
         _overlayPanel.OffsetTop = 8;
         _overlayPanel.OffsetRight = -8;
         _overlayPanel.OffsetBottom = 140;
