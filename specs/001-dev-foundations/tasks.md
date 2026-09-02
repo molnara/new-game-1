@@ -427,13 +427,13 @@ trimming — nothing else depends on it.
 
 ### Tests for User Story 5 (write first, confirm failing) ⚠️
 
-- [ ] T054 [P] [US5] Write `tests/Core.Tests/Diagnostics/FrameTimeHistogramTests.cs`: `Add` is
+- [X] T054 [P] [US5] Write `tests/Core.Tests/Diagnostics/FrameTimeHistogramTests.cs`: `Add` is
       constant-time and allocation-free; average and worst frame are **exact** while p95/p99 are
       accurate to bucket width (research R12); a sample above the top bucket lands in the overflow
       bucket and still updates `WorstMs` exactly, so a catastrophic stall is never lost; negative and
       NaN samples are rejected rather than recorded; memory use is fixed regardless of sample count
       (FR-045a).
-- [ ] T055 [P] [US5] Write `tests/Core.Tests/Diagnostics/FrameTimeStatisticsTests.cs`: a snapshot of
+- [X] T055 [P] [US5] Write `tests/Core.Tests/Diagnostics/FrameTimeStatisticsTests.cs`: a snapshot of
       an empty histogram is constructible, marked low-confidence, and reports percentiles as **absent
       rather than 0** — no divide-by-zero and no misleading value (the overlay-before-first-frame edge
       case); `IsLowConfidence` is true below 1000 samples (FR-044); `SampleCount` is carried on the
