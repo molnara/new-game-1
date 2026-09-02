@@ -14,30 +14,30 @@ gate, logging, console, performance measurement).
 
 ## Requirement Consistency
 
-- [ ] CHK001 Does FR-028's ordered stage list agree with every other statement of the verification
+- [X] CHK001 Does FR-028's ordered stage list agree with every other statement of the verification
   stages? FR-036 requires golden comparison to run as a stage and `contracts/cli-scripts.md` tables
   six stages, while FR-028 and the "Verification stages" assumption both name five and omit it.
   [Conflict, Spec §FR-028, §FR-036, §Assumptions]
-- [ ] CHK002 Is the reversed 2026-09-01 deferral fully unwound in the requirements themselves — does
+- [X] CHK002 Is the reversed 2026-09-01 deferral fully unwound in the requirements themselves — does
   any surviving requirement, assumption, or `quickstart.md` step still presume the engine-free-only
   gate that FR-028c/d/e replaced? [Consistency, Spec §Clarifications, §FR-028c]
-- [ ] CHK003 Is the performance overlay's availability stated consistently? FR-038 gates it on a
+- [X] CHK003 Is the performance overlay's availability stated consistently? FR-038 gates it on a
   console command and the "Performance overlay audience" assumption says it "shares the console's
   gating", but neither states whether enabling the console by launch flag in a distributed build
   also exposes the overlay. [Consistency, Spec §FR-009a, §FR-038, §Assumptions]
 
 ## Requirement Completeness
 
-- [ ] CHK004 Is concurrent-session behavior covered by a functional requirement, or does it exist
+- [X] CHK004 Is concurrent-session behavior covered by a functional requirement, or does it exist
   only as an edge-case bullet with no FR to trace a task to? [Gap, Spec §Edge Cases "Two sessions
   at once", §FR-001]
-- [ ] CHK005 Is "the game reports the problem and keeps running" when the logs folder is unwritable
+- [X] CHK005 Is "the game reports the problem and keeps running" when the logs folder is unwritable
   expressed as a requirement, or only as an edge case? [Gap, Spec §Edge Cases "Log destination
   unwritable", §FR-001]
-- [ ] CHK006 Does any requirement state *when* bounded retention is applied (startup, shutdown, or
+- [X] CHK006 Does any requirement state *when* bounded retention is applied (startup, shutdown, or
   continuously) and how pruning behaves while another session holds a log file open? [Gap,
   Spec §FR-006]
-- [ ] CHK007 Is the "gate that is green because it checks nothing" defect owned by a requirement?
+- [X] CHK007 Is the "gate that is green because it checks nothing" defect owned by a requirement?
   The plan records two instances — a `dotnet format` stage against a four-line `.editorconfig`, and
   a GoDotTest run that exits 0 with `Passed: 0` — and puts the countermeasures only in the plan and
   contracts, not in FR-028b/FR-028c or any success criterion. [Gap, Plan §Constitution v1.1.0 delta,
@@ -45,38 +45,38 @@ gate, logging, console, performance measurement).
 
 ## Requirement Clarity & Measurability
 
-- [ ] CHK008 Are the two flush/write intervals quantified? FR-005 says debug and information entries
+- [X] CHK008 Are the two flush/write intervals quantified? FR-005 says debug and information entries
   are written on "a short recurring interval" and FR-046 says statistics are written "at a recurring
   interval", with no figure in either — yet SC-002's 100%-retention claim depends on the first.
   [Clarity, Spec §FR-005, §FR-046, §SC-002]
-- [ ] CHK009 Is FR-036's "stated tolerance" actually stated? No pixel threshold appears in the spec,
+- [X] CHK009 Is FR-036's "stated tolerance" actually stated? No pixel threshold appears in the spec,
   and research R2 defers the value to "calibrated the first time a golden fails", which leaves the
   pass/fail boundary of a required verification stage undefined at task-generation time.
   [Ambiguity, Spec §FR-036, Research §R2]
-- [ ] CHK010 Is "a build made for distribution" defined by an observable property a developer or a
+- [X] CHK010 Is "a build made for distribution" defined by an observable property a developer or a
   test could evaluate? FR-009a makes the console's openability depend on the term without defining
   what distinguishes such a build from a development one. [Clarity, Spec §FR-009a]
-- [ ] CHK011 Can FR-040 / SC-013's "under 1 millisecond" be objectively measured as written? The
+- [X] CHK011 Can FR-040 / SC-013's "under 1 millisecond" be objectively measured as written? The
   spec names a comparison ("the same scene with the overlay disabled") but not the scene, the sample
   count, or how the difference is computed — and the container's software rasterizer has frame-time
   variance of its own. [Measurability, Spec §FR-040, §SC-013, US5 scenario 7]
-- [ ] CHK012 Does SC-004's five-minute budget state which run it applies to? The "First-run frame
+- [X] CHK012 Does SC-004's five-minute budget state which run it applies to? The "First-run frame
   spikes" edge case establishes that a cold run pays shader compilation and asset import, so a cold
   and a warm run are not the same measurement. [Measurability, Spec §SC-004, §Edge Cases]
-- [ ] CHK013 Is FR-019's bounded console history quantified, or is the bound left to implementer
+- [X] CHK013 Is FR-019's bounded console history quantified, or is the bound left to implementer
   choice with nothing to verify against? [Clarity, Spec §FR-019]
 
 ## Coverage & Edge Cases
 
-- [ ] CHK014 Is the outcome of a duplicate command registration specified beyond "reported as an
+- [X] CHK014 Is the outcome of a duplicate command registration specified beyond "reported as an
   error"? FR-014 and the edge case both forbid silent shadowing but neither says which registration
   is retained, or whether registration failure is fatal. [Gap, Spec §FR-014, §Edge Cases "Command
   name collision"]
-- [ ] CHK015 Are the rendering-dependent metrics that may be unavailable headless enumerated, and is
+- [X] CHK015 Are the rendering-dependent metrics that may be unavailable headless enumerated, and is
   the form of the statistics record specified when they are absent? US5 scenario 8 requires "nothing
   crashes" generically, while FR-047 mandates a video-memory figure that a software-rendered
   headless run may not have. [Coverage, Spec §FR-041, §FR-047, US5 scenario 8]
-- [ ] CHK016 Is there a defined path for legitimately updating a golden reference? FR-034 permits
+- [X] CHK016 Is there a defined path for legitimately updating a golden reference? FR-034 permits
   replacing the placeholder scene, SC-010 makes any appearance change fail verification, and Out of
   Scope excludes an approval workflow — leaving the intentional-change case unowned. [Conflict,
   Spec §FR-034, §FR-035, §SC-010, §Out of Scope]
