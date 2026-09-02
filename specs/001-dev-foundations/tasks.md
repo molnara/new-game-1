@@ -448,12 +448,12 @@ trimming — nothing else depends on it.
       ~100 ms plus one overflow bucket, with running count, sum and maximum; `Snapshot()` produces a
       `FrameTimeStatistics` without mutating or resetting (research R12). Makes T054 pass. Depends on
       T056.
-- [ ] T058 [P] [US5] Create `src/Core/Diagnostics/IPerformanceCounters.cs` — `DrawCalls`,
+- [X] T058 [P] [US5] Create `src/Core/Diagnostics/IPerformanceCounters.cs` — `DrawCalls`,
       `VideoMemoryBytes`, `ProcessMemoryBytes`, each able to report **explicitly unavailable** rather
       than zero (FR-041a). Frame time and FPS are deliberately **not** on this interface: frame time
       comes from the engine's per-frame delta and FPS is derived as `1000 / frameMs`, because the
       engine's own FPS counter reads a frozen `1.0` in short runs (research R11).
-- [ ] T059 [US5] Create `src/Game/Infrastructure/GodotPerformanceCounters.cs` implementing
+- [X] T059 [US5] Create `src/Game/Infrastructure/GodotPerformanceCounters.cs` implementing
       `IPerformanceCounters`: `RENDER_TOTAL_DRAW_CALLS_IN_FRAME`, `RENDER_VIDEO_MEM_USED`, and process
       memory from `/proc/self/status` `VmRSS` — **not** `OS.GetMemoryInfo()`, which reports system
       RAM, and **not** `MEMORY_STATIC`, which under-reported by 11x in the spike (FR-047; research
