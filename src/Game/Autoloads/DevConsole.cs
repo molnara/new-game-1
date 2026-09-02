@@ -89,7 +89,7 @@ public partial class DevConsole : CanvasLayer
     {
         _panel = new ColorRect { Color = new Color(0f, 0f, 0f, 0.85f) };
         AddChild(_panel);
-        _panel.SetAnchorsPreset(Control.LayoutPreset.TopWide);
+        _panel.SetAnchorsAndOffsetsPreset(Control.LayoutPreset.TopWide);
         _panel.OffsetBottom = 320;
 
         var layout = new VBoxContainer();
