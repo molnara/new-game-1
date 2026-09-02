@@ -512,10 +512,10 @@ trimming — nothing else depends on it.
 - [X] T068 [P] Add XML doc comments to the public `src/Core` surface only — `CommandRegistry`,
       `FrameTimeHistogram`, `IScreenshotService`, `IPerformanceCounters` — and to nothing on the Game
       side (constitution VI).
-- [ ] T069 Confirm Core purity: `grep -rn "using Godot" src/Core/` returns nothing (constitution I).
+- [X] T069 Confirm Core purity: `grep -rn "using Godot" src/Core/` returns nothing (constitution I).
       If it ever will not, the missing piece is a Core-declared interface implemented in
       `src/Game/Infrastructure`.
-- [ ] T070 Confirm every `*.cs.uid` Godot generated beside a new script is staged rather than dropped
+- [X] T070 Confirm every `*.cs.uid` Godot generated beside a new script is staged rather than dropped
       — `git status --short` should show one per Game-side `.cs` file and none ignored (research R15).
 - [ ] T071 Run [quickstart.md](./quickstart.md) end to end, all five stories, and read the screenshot
       it produces. Time a cold walkthrough as part of it — open the console, run `help`, produce a
