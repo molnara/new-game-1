@@ -206,13 +206,13 @@ run a listed command, confirm its output appears, press backtick and confirm gam
 
 ### Implementation for User Story 2
 
-- [ ] T023 [P] [US2] Create `src/Core/Console/CommandDescriptor.cs` — immutable record of `Name`,
+- [X] T023 [P] [US2] Create `src/Core/Console/CommandDescriptor.cs` — immutable record of `Name`,
       `Summary`, `Usage`, `Handler`; construction throws on an empty name, empty summary, or a name
       containing whitespace (FR-013, data-model.md). Makes the descriptor half of T020 pass.
-- [ ] T024 [P] [US2] Create `src/Core/Console/CommandArgs.cs` — `CommandName` plus `Positional`
+- [X] T024 [P] [US2] Create `src/Core/Console/CommandArgs.cs` — `CommandName` plus `Positional`
       tokens with quotes already resolved. (Not named individually in plan.md's file list; it is the
       parser's output type from data-model.md.)
-- [ ] T025 [P] [US2] Create `src/Core/Console/CommandResult.cs` — `Succeeded`, `Message`,
+- [X] T025 [P] [US2] Create `src/Core/Console/CommandResult.cs` — `Succeeded`, `Message`,
       `FailureReason`, with `Ok(message)` / `Fail(reason)` constructors (FR-015, FR-016).
 - [ ] T026 [US2] Create `src/Core/Console/CommandLineParser.cs` — `Parse(string line)` producing
       `CommandArgs`. Makes T019 pass. Depends on T024.
