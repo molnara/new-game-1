@@ -126,7 +126,7 @@ severity-tagged, source-tagged entries covering startup through shutdown.
 
 ### Implementation for User Story 1
 
-- [ ] T011 [US1] Create `src/Core/Diagnostics/LogRetentionPolicy.cs` — a pure function over file
+- [X] T011 [US1] Create `src/Core/Diagnostics/LogRetentionPolicy.cs` — a pure function over file
       names performing no I/O, returning the names to delete (FR-006). Makes T010 pass.
 - [ ] T012 [P] [US1] Create `src/Game/Infrastructure/LogPaths.cs` — resolve `user://logs/`
       (research R6), create it, and mint a per-session file name that is sortable by start time and
