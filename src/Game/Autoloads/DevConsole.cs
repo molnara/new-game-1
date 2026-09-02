@@ -8,7 +8,9 @@ namespace NewGame1.Autoloads;
 
 public partial class DevConsole : CanvasLayer
 {
-    private const int HistoryCapacity = 1000;
+    // FR-019: bound is a stated, configurable number of lines, defaulting to 1000; reuses the
+    // launch-flag convention Logging.cs establishes for --log-level.
+    public const int DefaultHistoryCapacity = 1000;
 
     public CommandRegistry Registry { get; private set; } = null!;
 
@@ -16,7 +18,7 @@ public partial class DevConsole : CanvasLayer
 
     public string InputText => _input.Text;
 
-    private readonly BoundedLog _history = new(HistoryCapacity);
+    private BoundedLog _history = null!;
     private readonly List<string> _submitted = [];
     private ColorRect _panel = null!;
     private RichTextLabel _output = null!;
@@ -33,6 +35,7 @@ public partial class DevConsole : CanvasLayer
         ProcessMode = ProcessModeEnum.Always;
         Layer = 100;
 
+        _history = new BoundedLog(ResolveHistoryCapacity());
         _openAllowed = DetermineOpenAllowed(_logger);
 
         HelpCommand.Register(Registry);
@@ -77,6 +80,39 @@ public partial class DevConsole : CanvasLayer
             RecallHistory(1);
             GetViewport().SetInputAsHandled();
         }
+    }
+
+    private static int ResolveHistoryCapacity()
+    {
+        var userArgs = OS.GetCmdlineUserArgs();
+        if (TryGetFlagValue(userArgs, "--console-history", out var value)
+            && int.TryParse(value, out var parsed) && parsed > 0)
+        {
+            return parsed;
+        }
+
+        return DefaultHistoryCapacity;
+    }
+
+    private static bool TryGetFlagValue(string[] args, string flag, out string value)
+    {
+        for (var i = 0; i < args.Length; i++)
+        {
+            if (args[i].StartsWith(flag + "=", StringComparison.Ordinal))
+            {
+                value = args[i][(flag.Length + 1)..];
+                return true;
+            }
+
+            if (args[i] == flag && i + 1 < args.Length)
+            {
+                value = args[i + 1];
+                return true;
+            }
+        }
+
+        value = "";
+        return false;
     }
 
     private static bool DetermineOpenAllowed(ILogger<DevConsole> logger)

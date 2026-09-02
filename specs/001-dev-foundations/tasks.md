@@ -657,28 +657,28 @@ names `scripts/verify.sh` as the gate for every task.
       `ToggleOpensAndClosesTheConsole`, so nothing measures the open latency. Assert the console is
       visible after a single displayed frame, and record in a comment which part of the two-tick
       delay is harness-only latency from `Input.ParseInputEvent`. per SC-007, FR-028e (partial)
-- [ ] T078 Make the console output-history bound configurable in
+- [X] T078 Make the console output-history bound configurable in
       `src/Game/Autoloads/DevConsole.cs`, which hard-codes `private const int HistoryCapacity =
       1000`. FR-019 requires a stated, configurable number of lines defaulting to 1000; follow the
       launch-flag convention `src/Game/Infrastructure/Logging.cs` establishes for `--log-level`,
       whose own doc comment already claims console history reuses it. per FR-019 (missing)
-- [ ] T079 Stop `Logging.PruneOldSessions` in `src/Game/Infrastructure/Logging.cs` from deleting a
+- [X] T079 Stop `Logging.PruneOldSessions` in `src/Game/Infrastructure/Logging.cs` from deleting a
       session log another running session holds open: `File.Delete` unlinks the file regardless, so
       the other session keeps writing to an inode nobody can find. Session file names already carry
       the writing process id (`LogPaths.Resolve`), so filter on whether that process is still alive
       before deleting, and cover the decision with a fast-tier test in
       `tests/Core.Tests/Diagnostics/LogRetentionPolicyTests.cs`. per FR-006 (missing)
-- [ ] T080 Remove the XML doc comments from `src/Game` — 8 of its 10 files carry them, 25 in
+- [X] T080 Remove the XML doc comments from `src/Game` — 8 of its 10 files carry them, 25 in
       `Logging.cs` and 19 in `PerfMonitor.cs` alone. Constitution VI puts XML doc comments only on
       public `src/Core` APIs and plan.md's VI delta says the Game-side adapters get none. Keep the
       content that explains *why* as ordinary `//` comments; drop the rest. per Constitution VI,
       plan: VI delta point 4 (contradicts)
-- [ ] T081 Correct the off-by-one in log retention: `Logging.PruneOldSessions` runs before the new
+- [X] T081 Correct the off-by-one in log retention: `Logging.PruneOldSessions` runs before the new
       session's file is created and keeps 10, so the folder settles at 11 session logs (observed
       after a container run) against the spec's stated "ten most recent session logs are kept".
       Account for the incoming session in the keep count. per FR-006, spec Assumptions
       (partial)
-- [ ] T082 Make the debug/information flush interval configurable in
+- [X] T082 Make the debug/information flush interval configurable in
       `src/Game/Infrastructure/Logging.cs`, where it is hard-coded as `TimeSpan.FromSeconds(1)` in
       both the timer's due time and its period. Clarification CHK008 recorded both timing defaults
       as configurable and only `--stats-interval` exists; add the matching launch flag, defaulting

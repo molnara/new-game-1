@@ -3,16 +3,13 @@ using NewGame1.Core.Diagnostics;
 
 namespace NewGame1.Infrastructure;
 
-/// <summary>
-/// Game-side <see cref="IPerformanceCounters"/> reading Godot's render monitors and the OS process
-/// table (FR-047; research R11). <see cref="ProcessMemoryBytes"/> parses <c>/proc/self/status</c>
-/// <c>VmRSS</c> — not <see cref="OS.GetMemoryInfo"/>, which reports system RAM, and not
-/// <c>Performance.MEMORY_STATIC</c>, which under-reported the real figure by 11x in the spike.
-/// <see cref="DrawCalls"/> and <see cref="VideoMemoryBytes"/> report null under Godot's dummy
-/// (`--headless`) display server, which has no rasterizer to measure (FR-041a). Every member reads
-/// live state on each access; <see cref="ProcessMemoryBytes"/> is a file read, so callers must poll
-/// it at the overlay's 4 Hz refresh, never per frame.
-/// </summary>
+// Game-side IPerformanceCounters reading Godot's render monitors and the OS process table
+// (FR-047; research R11). ProcessMemoryBytes parses /proc/self/status VmRSS — not
+// OS.GetMemoryInfo, which reports system RAM, and not Performance.MEMORY_STATIC, which
+// under-reported the real figure by 11x in the spike. DrawCalls and VideoMemoryBytes report null
+// under Godot's dummy (--headless) display server, which has no rasterizer to measure (FR-041a).
+// Every member reads live state on each access; ProcessMemoryBytes is a file read, so callers must
+// poll it at the overlay's 4 Hz refresh, never per frame.
 public sealed class GodotPerformanceCounters : IPerformanceCounters
 {
     private const string ProcStatusPath = "/proc/self/status";

@@ -5,12 +5,10 @@ using NewGame1.Infrastructure;
 
 namespace NewGame1.Autoloads;
 
-/// <summary>
-/// Cmdline-activated capture (FR-020..FR-027; research R5). Inert unless <c>--screenshot &lt;name&gt;</c>
-/// arrives via <see cref="OS.GetCmdlineUserArgs"/> — a normal play session pays no cost. When active,
-/// waits a fixed, configurable number of fully rendered frames (never a wall-clock delay, FR-026)
-/// before capturing through <see cref="IScreenshotService"/> and quitting with a status.
-/// </summary>
+// Cmdline-activated capture (FR-020..FR-027; research R5). Inert unless --screenshot <name>
+// arrives via OS.GetCmdlineUserArgs — a normal play session pays no cost. When active, waits a
+// fixed, configurable number of fully rendered frames (never a wall-clock delay, FR-026) before
+// capturing through IScreenshotService and quitting with a status.
 public partial class ScreenshotHarness : Node
 {
     public const int DefaultFrameDelay = 10;
@@ -52,7 +50,7 @@ public partial class ScreenshotHarness : Node
         _ = RunAsync(name, frameDelay);
     }
 
-    /// <summary>Waits <paramref name="frameDelay"/> rendered frames, then captures and quits.</summary>
+    // Waits frameDelay rendered frames, then captures and quits.
     internal async System.Threading.Tasks.Task RunAsync(string name, int frameDelay)
     {
         for (var i = 0; i < frameDelay; i++)

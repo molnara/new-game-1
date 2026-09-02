@@ -4,11 +4,9 @@ using Serilog.Events;
 
 namespace NewGame1.Infrastructure;
 
-/// <summary>
-/// Serilog sink bridging entries to <c>GD.Print</c>/<c>GD.PushError</c> so they also appear on
-/// the terminal in a headless run (FR-007). One of only two files permitted to call those
-/// (constitution III); <see cref="ProcessOutput"/> is the other.
-/// </summary>
+// Serilog sink bridging entries to GD.Print/GD.PushError so they also appear on the terminal in a
+// headless run (FR-007). One of only two files permitted to call those (constitution III);
+// ProcessOutput is the other.
 public sealed class GodotSink : ILogEventSink
 {
     private readonly IFormatProvider? _formatProvider;

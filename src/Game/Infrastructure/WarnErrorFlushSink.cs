@@ -4,14 +4,12 @@ using Serilog.Sinks.File;
 
 namespace NewGame1.Infrastructure;
 
-/// <summary>
-/// Decorates the file sink, forcing an immediate disk flush via <see cref="IFlushableFileSink"/>
-/// when an event is Warning or above, so warnings and errors survive an abrupt kill (FR-005;
-/// research R7). No-op if the wrapped sink does not implement the interface — Logging.cs configures
-/// the file sink (buffered, no <c>flushToDiskInterval</c>) so that it does; Serilog otherwise wraps
-/// it in an internal <c>PeriodicFlushToDiskSink</c> that hides the flushable sink behind a private
-/// field, which is the "awkward in practice" case research R7 anticipated.
-/// </summary>
+// Decorates the file sink, forcing an immediate disk flush via IFlushableFileSink when an event is
+// Warning or above, so warnings and errors survive an abrupt kill (FR-005; research R7). No-op if
+// the wrapped sink does not implement the interface — Logging.cs configures the file sink
+// (buffered, no flushToDiskInterval) so that it does; Serilog otherwise wraps it in an internal
+// PeriodicFlushToDiskSink that hides the flushable sink behind a private field, which is the
+// "awkward in practice" case research R7 anticipated.
 public sealed class WarnErrorFlushSink : ILogEventSink
 {
     private readonly ILogEventSink _inner;

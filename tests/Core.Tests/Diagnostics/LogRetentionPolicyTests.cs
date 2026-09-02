@@ -120,4 +120,47 @@ public class LogRetentionPolicyTests
     {
         LogRetentionPolicy.SelectForDeletion(Array.Empty<string>()).ShouldBeEmpty();
     }
+
+    [Fact]
+    public void ExcludesASessionLogWhoseOwningProcessIsStillAlive()
+    {
+        var existing = new[]
+        {
+            "session-20260101T000000000-111.log",
+            "session-20260102T000000000-222.log",
+            "session-20260103T000000000-333.log",
+        };
+
+        var toDelete = LogRetentionPolicy.SelectForDeletion(existing, keep: 1, isProcessAlive: pid => pid == 111);
+
+        toDelete.ShouldBe(new[] { "session-20260102T000000000-222.log" });
+    }
+
+    [Fact]
+    public void NamesWithoutAProcessIdAreEligibleRegardlessOfPredicate()
+    {
+        var existing = new[]
+        {
+            "session-20260101T000000000.log",
+            "session-20260102T000000000-222.log",
+        };
+
+        var toDelete = LogRetentionPolicy.SelectForDeletion(existing, keep: 0, isProcessAlive: _ => true);
+
+        toDelete.ShouldBe(new[] { "session-20260101T000000000.log" });
+    }
+
+    [Fact]
+    public void NullPredicateNeverExcludesAnyCandidate()
+    {
+        var existing = new[]
+        {
+            "session-20260101T000000000-111.log",
+            "session-20260102T000000000-222.log",
+        };
+
+        var toDelete = LogRetentionPolicy.SelectForDeletion(existing, keep: 0, isProcessAlive: null);
+
+        toDelete.ShouldBe(existing);
+    }
 }

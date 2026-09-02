@@ -6,19 +6,17 @@ using NewGame1.Infrastructure;
 
 namespace NewGame1.Autoloads;
 
-/// <summary>
-/// Always-on frame-time sampler and performance overlay (FR-037, FR-039, FR-045, FR-045a).
-/// Accumulates every frame's delta into a <see cref="FrameTimeHistogram"/> from startup
-/// regardless of overlay visibility, and writes interim statistics records to the session log on
-/// a configurable interval (default 30 s, FR-046) plus one final record at shutdown. Interim and
-/// final records are distinguishable (FR-046a) and each is flushed to disk as written (FR-046b).
-/// The overlay is a child <see cref="CanvasLayer"/>, off by default (FR-038), refreshing about 4
-/// times per second with that interval's average and worst frame (FR-039, FR-039a), frames per
-/// second derived from the average (research R11), draw calls, and the two separately labelled
-/// memory figures (FR-037, FR-047) — each reported as explicitly unavailable rather than zero when
-/// the run's environment cannot supply it (FR-041a). Toggling the overlay only affects display;
-/// sampling for the logged statistics is unaffected either way (FR-045).
-/// </summary>
+// Always-on frame-time sampler and performance overlay (FR-037, FR-039, FR-045, FR-045a).
+// Accumulates every frame's delta into a FrameTimeHistogram from startup regardless of overlay
+// visibility, and writes interim statistics records to the session log on a configurable interval
+// (default 30 s, FR-046) plus one final record at shutdown. Interim and final records are
+// distinguishable (FR-046a) and each is flushed to disk as written (FR-046b). The overlay is a
+// child CanvasLayer, off by default (FR-038), refreshing about 4 times per second with that
+// interval's average and worst frame (FR-039, FR-039a), frames per second derived from the average
+// (research R11), draw calls, and the two separately labelled memory figures (FR-037, FR-047) —
+// each reported as explicitly unavailable rather than zero when the run's environment cannot
+// supply it (FR-041a). Toggling the overlay only affects display; sampling for the logged
+// statistics is unaffected either way (FR-045).
 public partial class PerfMonitor : CanvasLayer
 {
     public const double DefaultStatisticsIntervalSeconds = 30.0;
@@ -49,10 +47,9 @@ public partial class PerfMonitor : CanvasLayer
         _counters = counters;
     }
 
-    /// <summary>Whether the overlay is currently displayed. Off by default (FR-038).</summary>
     public bool IsOverlayVisible => _overlayPanel.Visible;
 
-    /// <summary>Shows or hides the overlay. Sampling continues regardless (FR-045).</summary>
+    // Shows or hides the overlay. Sampling continues regardless (FR-045).
     public void SetOverlayVisible(bool visible)
     {
         _overlayPanel.Visible = visible;
@@ -66,10 +63,8 @@ public partial class PerfMonitor : CanvasLayer
         _overlayLabel.Text = "Perf overlay: waiting for samples...";
     }
 
-    /// <summary>
-    /// Registers <c>perf</c> and <c>perfstats</c> against <paramref name="registry"/>
-    /// (contracts/console-commands.md). The overlay is otherwise unreachable (FR-038).
-    /// </summary>
+    // Registers perf and perfstats against registry (contracts/console-commands.md). The overlay
+    // is otherwise unreachable (FR-038).
     public void RegisterCommands(CommandRegistry registry)
     {
         registry.TryRegister(new CommandDescriptor(

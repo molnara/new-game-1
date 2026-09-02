@@ -4,11 +4,9 @@ using NewGame1.Core.Screenshots;
 
 namespace NewGame1.Infrastructure;
 
-/// <summary>
-/// Game-side <see cref="IScreenshotService"/> capturing the main viewport's rendered texture
-/// (FR-020, FR-023, FR-027; research R1). Writes the PNG to a temporary path first and only moves
-/// it into place on success, so a failed capture never leaves an empty or partial file behind.
-/// </summary>
+// Game-side IScreenshotService capturing the main viewport's rendered texture (FR-020, FR-023,
+// FR-027; research R1). Writes the PNG to a temporary path first and only moves it into place on
+// success, so a failed capture never leaves an empty or partial file behind.
 public sealed class GodotScreenshotService : IScreenshotService
 {
     private readonly string _artifactsDirectory;

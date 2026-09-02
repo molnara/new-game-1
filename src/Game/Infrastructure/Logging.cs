@@ -14,16 +14,16 @@ using Timer = System.Threading.Timer;
 
 namespace NewGame1.Infrastructure;
 
-/// <summary>
-/// The static <see cref="For{T}"/> entry point (FR-004) over a Serilog pipeline: a file sink
-/// (buffered, flushed at least once per second and immediately on Warning/Error via
-/// <see cref="WarnErrorFlushSink"/>, FR-005), a <see cref="GodotSink"/> alongside it (FR-007), and
-/// a configurable minimum level defaulting to Information (FR-003). Also establishes the
-/// <c>--log-level &lt;level&gt;</c> launch-flag convention (research R5, R14) reused by console
-/// history (FR-019) and the statistics interval (FR-046).
-/// </summary>
+// The static For<T>() entry point (FR-004) over a Serilog pipeline: a file sink (buffered, flushed
+// on a configurable interval and immediately on Warning/Error via WarnErrorFlushSink, FR-005), a
+// GodotSink alongside it (FR-007), and a configurable minimum level defaulting to Information
+// (FR-003). Also establishes the --log-level <level> launch-flag convention (research R5, R14)
+// reused by console history (FR-019) and the statistics interval (FR-046).
 public static class Logging
 {
+    // Default debug/information flush interval in seconds (FR-005); configurable via --flush-interval.
+    public const double DefaultFlushIntervalSeconds = 1.0;
+
     private const string LogLineTemplate =
         "{Timestamp:yyyy-MM-dd HH:mm:ss.fff} [{Level:u3}] {SourceContext}: {Message:lj}{NewLine}{Exception}";
 
@@ -36,17 +36,15 @@ public static class Logging
     private static Timer? _flushTimer;
     private static bool _shutDown;
 
-    /// <summary>The minimum severity currently in effect (FR-003); adjustable at runtime.</summary>
+    // The minimum severity currently in effect (FR-003); adjustable at runtime.
     public static LogEventLevel MinimumLevel
     {
         get => LevelSwitch.MinimumLevel;
         set => LevelSwitch.MinimumLevel = value;
     }
 
-    /// <summary>
-    /// Builds the Serilog pipeline and prunes old sessions. Safe to call more than once — later
-    /// calls are ignored. Must run before anything else so startup itself is in the record.
-    /// </summary>
+    // Safe to call more than once — later calls are ignored. Must run before anything else so
+    // startup itself is in the record.
     public static void Initialize()
     {
         if (_factory is not null)
@@ -75,7 +73,8 @@ public static class Logging
             _fileSink = new FileSink(resolution.FilePath!, formatter, fileSizeLimitBytes: null, Encoding.UTF8, buffered: true);
             config = config.WriteTo.Sink(new WarnErrorFlushSink(_fileSink));
 
-            _flushTimer = new Timer(_ => _fileSink?.FlushToDisk(), null, TimeSpan.FromSeconds(1), TimeSpan.FromSeconds(1));
+            var flushInterval = ResolveFlushInterval(userArgs);
+            _flushTimer = new Timer(_ => _fileSink?.FlushToDisk(), null, flushInterval, flushInterval);
         }
 
         Log.Logger = config.CreateLogger();
@@ -84,20 +83,13 @@ public static class Logging
         AppDomain.CurrentDomain.UnhandledException += OnUnhandledException;
     }
 
-    /// <summary>Obtains a logger labelled with <typeparamref name="T"/>'s own name (FR-004).</summary>
     public static ILogger<T> For<T>() => Factory.CreateLogger<T>();
 
-    /// <summary>
-    /// Like <see cref="For{T}"/>, but yields <c>null</c> instead of throwing when
-    /// <see cref="Initialize"/> has not run. For callers on a cleanup or failure path, where a
-    /// missing logger must not become a second, louder failure than the one being reported.
-    /// </summary>
+    // Like For<T>, but yields null instead of throwing when Initialize has not run. For callers on
+    // a cleanup or failure path, where a missing logger must not become a second, louder failure
+    // than the one being reported.
     public static ILogger<T>? TryFor<T>() => _factory?.CreateLogger<T>();
 
-    /// <summary>
-    /// Registers the <c>loglevel</c> command (FR-003) — every system here exposes at least one
-    /// console command (constitution III), and logging otherwise has none.
-    /// </summary>
     public static void RegisterCommands(CommandRegistry registry)
     {
         registry.TryRegister(new CommandDescriptor(
@@ -107,15 +99,12 @@ public static class Logging
             HandleLogLevel));
     }
 
-    /// <summary>
-    /// Forces the file sink to disk immediately, for callers whose durability requirement is
-    /// per-write rather than per-interval — an Information-level entry otherwise waits for the
-    /// periodic flush or a Warning-triggered one (FR-046b; see <see cref="WarnErrorFlushSink"/> for
-    /// the general Warning+ policy, FR-005).
-    /// </summary>
+    // Forces the file sink to disk immediately, for callers whose durability requirement is
+    // per-write rather than per-interval — an Information-level entry otherwise waits for the
+    // periodic flush or a Warning-triggered one (FR-046b; see WarnErrorFlushSink for the general
+    // Warning+ policy, FR-005).
     public static void FlushNow() => _fileSink?.FlushToDisk();
 
-    /// <summary>Flushes and closes the pipeline so the final batch reaches disk (FR-005).</summary>
     public static void Shutdown()
     {
         if (_shutDown)
@@ -143,7 +132,13 @@ public static class Logging
     private static void PruneOldSessions(string directory)
     {
         var existing = Directory.GetFiles(directory).Select(Path.GetFileName).Cast<string>().ToList();
-        foreach (var name in LogRetentionPolicy.SelectForDeletion(existing))
+
+        // keep - 1: this runs before the new session's own file is created, so keeping the full
+        // default here would leave keep + 1 files once that file exists (FR-006).
+        var toDelete = LogRetentionPolicy.SelectForDeletion(
+            existing, keep: LogRetentionPolicy.DefaultKeep - 1, isProcessAlive: IsProcessAlive);
+
+        foreach (var name in toDelete)
         {
             try
             {
@@ -154,6 +149,30 @@ public static class Logging
                 Console.WriteLine($"[Logging] Could not prune old session log '{name}': {ex.Message}");
             }
         }
+    }
+
+    private static bool IsProcessAlive(int pid)
+    {
+        try
+        {
+            using var process = System.Diagnostics.Process.GetProcessById(pid);
+            return !process.HasExited;
+        }
+        catch (ArgumentException)
+        {
+            return false;
+        }
+    }
+
+    private static TimeSpan ResolveFlushInterval(string[] userArgs)
+    {
+        if (TryGetFlagValue(userArgs, "--flush-interval", out var value)
+            && double.TryParse(value, out var seconds) && seconds > 0)
+        {
+            return TimeSpan.FromSeconds(seconds);
+        }
+
+        return TimeSpan.FromSeconds(DefaultFlushIntervalSeconds);
     }
 
     private static CommandResult HandleLogLevel(CommandArgs args)
