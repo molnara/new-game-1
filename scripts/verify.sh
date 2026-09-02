@@ -38,6 +38,17 @@ stage_build() {
 }
 
 stage_style() {
+    # FR-028f: the style stage must fail if its configuration enforces no rule. Against the
+    # repository's original four-line .editorconfig, `dotnet format` passes almost unconditionally
+    # (research R13) — a green stage that checked nothing. Confirm at least one diagnostic is
+    # actually enforced at warning or above before trusting a clean run.
+    local enforced_rules
+    enforced_rules="$(grep -cE '^\s*dotnet_diagnostic\.[A-Za-z0-9]+\.severity\s*=\s*(warning|error)\b' "${repo_root}/.editorconfig")"
+    if (( enforced_rules == 0 )); then
+        echo "verify.sh: .editorconfig enforces no diagnostic at warning or above — style stage would pass vacuously" >&2
+        return 1
+    fi
+
     # Bare `dotnet format` (no subcommand) so whitespace, style and analyzers all run
     # (research R13). --verify-no-changes: a gate must never rewrite the tree it judges.
     # Exit code is trustworthy here: 0 clean, non-zero when changes would be made.

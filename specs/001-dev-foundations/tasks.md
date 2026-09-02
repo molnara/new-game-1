@@ -379,7 +379,7 @@ it stops at that stage, names it, and exits non-zero.
       screenshot path (FR-029); exit 0 only when every stage passed (FR-031); no interaction, no
       display (FR-032). Structure the stages so another can be inserted without reworking the script
       or its reporting (FR-028a). Depends on T044, T047, T049, T008.
-- [ ] T051 [US4] Add the anti-vacuity assertions to `scripts/verify.sh` (FR-028f) — the defect this
+- [X] T051 [US4] Add the anti-vacuity assertions to `scripts/verify.sh` (FR-028f) — the defect this
       feature hit twice: the Godot test stage must assert the reported `Passed:` count is greater
       than zero **as well as** branching on the exit code, because a run executing zero tests exits 0
       and prints `Passed: 0 | Failed: 0 | Skipped: 0` (research R14); the style stage must fail if
