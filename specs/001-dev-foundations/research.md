@@ -9,8 +9,12 @@ proven by running code in this container during planning, not reasoned about.
 
 ## R1. Headless screenshot capture — CORRECTED ASSUMPTION (spike-verified)
 
-**Decision**: The screenshot harness runs under `xvfb-run` with `--rendering-driver opengl3` and
+**Decision**: The screenshot harness runs under `xvfb-run` with a real rendering driver and
 `--audio-driver Dummy`. It must **not** run under `--headless`.
+
+*Which* driver is settled by R10, which supersedes the OpenGL3 choice recorded here: captures use
+`--rendering-method forward_plus --rendering-driver vulkan` to match the host editor's renderer. The
+finding below — that `--headless` cannot capture at all — is unaffected by that change.
 
 **Rationale**: `--headless` selects Godot's dummy rendering backend, which has no viewport texture.
 The spike proved capture is impossible there — `get_viewport().get_texture()` returns null:
@@ -39,7 +43,9 @@ which is what made the first spike attempt appear to hang.
 
 **Alternatives considered**: `--headless` with a manually created `SubViewport` (rejected — the
 dummy driver has no rasterizer at all, so nothing renders regardless of viewport arrangement);
-Vulkan via lavapipe (rejected — llvmpipe/OpenGL3 already works and is the lighter path).
+Vulkan via lavapipe (initially set aside here as the heavier path, then **adopted** in R10 once it
+turned out to be the only way to capture under the same renderer the host editor uses — the 173 ms
+it costs buys away an entire category of golden-image drift).
 
 ---
 
@@ -68,6 +74,10 @@ is actually compared on the host rather than treated as settled.
 **Consequence**: goldens are container artifacts. `compare-golden.sh` takes a threshold argument so
 the policy is visible and tunable rather than buried, and the quickstart documents that goldens are
 regenerated in the container.
+
+**Refined by R10**: the threshold has two distinct causes mixed into it — the renderer the capture
+runs under, and hardware-versus-software rasterization. The first is eliminable and should be
+eliminated; only the second genuinely needs a tolerance. See R10.
 
 **Alternatives considered**: perceptual hashing (rejected — more machinery than a pixel count for a
 flat placeholder scene); `-metric RMSE` with a fuzz factor (viable, but `AE` yields a plain
@@ -200,6 +210,57 @@ precisely when a developer most wants to inspect state.
 
 **Detail**: the toggle binds to an `InputMap` action rather than a hard-coded key, satisfying FR-009's
 remappability requirement and the "backtick is awkward on some layouts" edge case.
+
+---
+
+## R10. Renderer choice: Forward+ vs gl_compatibility (spike-verified)
+
+**Decision**: Pin the rendering method explicitly in `project.godot`, and have the capture harness
+run under the **same** renderer the host editor uses — `forward_plus` via Vulkan, which works in
+this container through Mesa's lavapipe software Vulkan driver.
+
+**The problem found**: `project.godot` currently has **no** `rendering/renderer/rendering_method`
+key. The project therefore runs Godot's default, `forward_plus`, which is what the host editor uses.
+Meanwhile `CLAUDE.md` documents capturing with `--rendering-method gl_compatibility`. Host and
+container would have been rendering the golden scene with two different renderers, and nothing in
+the project stated which one was authoritative.
+
+**Measurements** (640x360 = 230,400 pixels, flat background plus a text label):
+
+| Comparison | Differing pixels | Notes |
+|---|---|---|
+| `--rendering-driver opengl3` vs `--rendering-method gl_compatibility` | **0** | Identical. Requesting the OpenGL driver implies the compatibility renderer, so the plan's flag and `CLAUDE.md`'s flag were never actually in conflict. |
+| `gl_compatibility` vs `forward_plus` | **111** (0.048%) | RMSE 3.79/65535. Entirely glyph-edge antialiasing — a diff image shows the flat background is byte-identical and every changed pixel sits on the text. |
+| `forward_plus` run 1 vs run 2 | **0** | Deterministic, same as gl_compatibility. |
+
+**Availability**: `lvp_icd.json` is present and Godot reports `Vulkan 1.4.318 - Forward+ - llvmpipe`,
+so Forward+ needs no GPU here.
+
+**Cost**: 596 ms versus 423 ms per capture — roughly 40% slower, 173 ms in absolute terms. Against a
+verification run that also builds and tests, this is noise.
+
+**Why match the host renderer rather than take the cheaper one**: 111 pixels is trivially absorbed by
+a threshold *for this scene*, which is a flat rectangle and a label. That is not the scene the
+project will have for long. `gl_compatibility` genuinely lacks Forward+ features — it is a reduced
+renderer, not merely a different one — so once the real scene has lighting, shadows, or any
+post-processing, the two stop differing by antialiasing and start differing by whole effects being
+absent. A golden captured under the wrong renderer would then be worse than no golden: it would
+pass while showing something the developer never sees.
+
+**Consequence for the plan**:
+
+- `project.godot` should gain an explicit `rendering/renderer/rendering_method="forward_plus"` so the
+  renderer is stated rather than inherited from a default that could change between Godot versions.
+  This is a task for implementation, not something to change during planning — the developer runs
+  the editor against this same file.
+- `screenshot.sh` passes `--rendering-method forward_plus --rendering-driver vulkan`.
+- With the renderer matched, the golden threshold covers only hardware-versus-software rasterization
+  (R2), which is the one cause that cannot be eliminated from inside the container.
+
+**Alternatives considered**: capture under `gl_compatibility` and accept the drift (rejected — cheap
+now, actively misleading later, for 173 ms); pin the *project* to `gl_compatibility` so host and
+container match at the lower capability level (rejected — that downgrades the actual game to suit
+the test harness, which is precisely backwards).
 
 ---
 

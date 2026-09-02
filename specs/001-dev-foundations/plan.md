@@ -19,8 +19,10 @@ command-line argument. Verification is a shell script chaining build, Core tests
 screenshot compared against a golden image with ImageMagick.
 
 A spike run during planning proved the riskiest assumption in the feature and corrected it: capture
-does **not** work under `--headless`, only under `xvfb-run` with the OpenGL3 driver. See
-[research.md](./research.md) for the evidence.
+does **not** work under `--headless`, only under `xvfb-run` with a real rendering driver. A second
+spike then established which renderer that should be: `forward_plus` through software Vulkan,
+matching the host editor, rather than the reduced `gl_compatibility` renderer. See
+[research.md](./research.md) R1 and R10 for the evidence.
 
 ## Technical Context
 
@@ -32,7 +34,8 @@ abstraction), Serilog 4.4.0 + `Serilog.Extensions.Logging` 10.0.0 + `Serilog.Sin
 `NewGame1.csproj` / `NewGame1.Core.csproj`; this feature adds no new NuGet package.
 
 **System tooling**: ImageMagick 6.9.12 (`compare`, `convert`, `identify` — note: the IM7 `magick`
-wrapper is **not** installed), `xvfb-run`, Mesa llvmpipe (OpenGL 4.5 software).
+wrapper is **not** installed), `xvfb-run`, Mesa llvmpipe (OpenGL 4.5 software) and Mesa lavapipe
+(Vulkan 1.4 software, used for Forward+ captures — see research R10).
 
 **Storage**: Plain-text rolling log files under the Godot user data directory
 (`~/.local/share/godot/app_userdata/new game 1/logs/`, confirmed by spike). PNG artifacts under

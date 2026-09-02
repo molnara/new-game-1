@@ -29,8 +29,11 @@ Captures a screenshot of the placeholder main scene without a display.
 
 - Runs under `xvfb-run -a`, **not** `--headless`. The dummy renderer cannot produce a viewport
   texture and capture is impossible there.
-- Passes `--rendering-driver opengl3` and `--audio-driver Dummy`. Omitting the audio flag makes the
-  process stall on ALSA probing in a container with no sound card.
+- Passes `--rendering-method forward_plus --rendering-driver vulkan`, matching the renderer the host
+  editor uses, so the golden is not captured under a different renderer than the developer sees
+  (research R10). Mesa's lavapipe provides software Vulkan; no GPU is needed.
+- Passes `--audio-driver Dummy`. Omitting it makes the process stall on ALSA probing in a container
+  with no sound card.
 - Activates the harness with `-- --screenshot <name>` so the argument arrives via
   `OS.GetCmdlineUserArgs()`.
 - Success is asserted positively — the file exists and is non-empty — because Godot's exit code is

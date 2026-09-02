@@ -118,7 +118,9 @@ scripts/verify.sh; echo "exit=$?"     # expect FAIL naming the test stage, exit 
 
 **Golden images**: regenerate in the container, never on the host — the container rasterizes in
 software through llvmpipe while the host's editor uses its real GPU driver, so the two will not
-produce identical pixels (research R2).
+produce identical pixels (research R2). Captures must use `forward_plus`, the same renderer the host
+editor uses; capturing under `gl_compatibility` instead would add a second, avoidable source of
+drift that grows as the real scene gains lighting and effects (research R10).
 
 ```bash
 scripts/screenshot.sh main && cp artifacts/main.png tests/golden/main.png
