@@ -58,8 +58,8 @@ Run these inside the container (`podman compose exec gamedev bash`), or on the h
     xvfb-run -a godot --rendering-method forward_plus --rendering-driver vulkan --audio-driver Dummy
 
 There is no display in the container, so even a normal run goes through Xvfb — and no
-`--headless` path renders a frame. Press **`** (backtick) to open the developer console; type
-`help` for the command list.
+`--headless` path renders a frame. Press the backtick key (`` ` ``) to open the developer
+console; type `help` for the command list.
 
 ### Capture a screenshot
     scripts/screenshot.sh [name]
