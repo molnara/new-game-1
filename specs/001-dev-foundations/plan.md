@@ -42,8 +42,9 @@ wrapper is **not** installed), `xvfb-run`, Mesa llvmpipe (OpenGL 4.5 software).
 clarified decision defers `tests/Game.Tests` until something genuinely needs it. Engine-side
 behavior is evidenced by the screenshot harness and `verify.sh` instead.
 
-**Target Platform**: Linux dev container (no GPU, no display, software rendering only); Windows
-host runs the same engine and SDK versions.
+**Target Platform**: Linux dev container (no GPU, no display, software rendering only); Arch Linux
+host runs the same engine and SDK versions and drives the Godot editor against this same folder with
+hardware rendering.
 
 **Project Type**: Single Godot game project with an engine-free core library.
 

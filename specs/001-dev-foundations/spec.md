@@ -509,9 +509,9 @@ reversible decision, recorded here so planning can challenge it.
   are obtained, only that they are shown and are the figures a developer would expect.
 - **Golden-image comparison is in scope** (changed after the spec was first written, to match
   Constitution IV, which requires golden reference screenshots). References are generated and
-  compared in the development container only: the Windows host renders through a different graphics
-  driver and will not reproduce container pixels, which is why the comparison uses a tolerance
-  rather than demanding an exact match.
+  compared in the development container only: the container rasterizes in software while the host's
+  editor uses its real GPU driver, so the two do not produce identical pixels. That is why the
+  comparison uses a tolerance rather than demanding an exact match.
 
 ## Out of Scope
 

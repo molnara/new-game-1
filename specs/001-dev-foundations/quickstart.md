@@ -116,8 +116,9 @@ scripts/verify.sh; echo "exit=$?"     # expect FAIL naming the test stage, exit 
                                       # and no screenshot stage output (fail-fast, FR-030)
 ```
 
-**Golden images**: regenerate in the container, never on the host — the Windows host renders through
-d3d12 and will not reproduce container pixels (research R2).
+**Golden images**: regenerate in the container, never on the host — the container rasterizes in
+software through llvmpipe while the host's editor uses its real GPU driver, so the two will not
+produce identical pixels (research R2).
 
 ```bash
 scripts/screenshot.sh main && cp artifacts/main.png tests/golden/main.png

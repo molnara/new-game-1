@@ -53,10 +53,17 @@ only**.
 `AE` difference of 0). Software rendering through llvmpipe is deterministic on the same machine, so
 in-container comparison could in principle demand an exact match.
 
-The threshold exists for a different reason: `project.godot` sets
-`rendering_device/driver.windows="d3d12"`, so the Windows host renders through an entirely different
-driver and will not reproduce container pixels. A zero-tolerance golden would fail the moment it was
-checked on the host.
+The threshold exists for a different reason: the developer also runs the Godot editor on the host —
+Arch Linux — against this same folder, where rendering goes through the host's real GPU driver
+rather than llvmpipe. Hardware and software rasterizers differ in antialiasing, texture filtering
+and floating-point detail, so a host capture will not be byte-identical to a container one even
+though both are Linux and both may be using Mesa. A zero-tolerance golden would fail the first time
+it was checked outside the container.
+
+**Confidence**: unlike the rest of this document, this paragraph is reasoned rather than
+spike-verified — the host GPU is not reachable from inside the container. The practical consequence
+is that the threshold's starting value is a hedge, and should be calibrated the first time a golden
+is actually compared on the host rather than treated as settled.
 
 **Consequence**: goldens are container artifacts. `compare-golden.sh` takes a threshold argument so
 the policy is visible and tunable rather than buried, and the quickstart documents that goldens are
