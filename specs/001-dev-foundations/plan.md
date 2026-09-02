@@ -59,6 +59,30 @@ disk immediately; debug/info may batch (clarified, FR-005). Capture must wait a 
 never a wall-clock delay (clarified, FR-026). Verification must run unattended with no display
 (FR-032).
 
+**Measurement validity — performance numbers from this container are not real** (applies to the
+profiling story, FR-037 onward): the container renders through Mesa's software rasterizers —
+llvmpipe for OpenGL, lavapipe for Vulkan — with no GPU. A frame time measured here describes a
+software rasterizer running on the build machine. It is not a measurement of the game, and it is not
+a valid performance signal. Three consequences bind implementation:
+
+1. **No automated test may assert an absolute frame-time, frames-per-second, or draw-call budget
+   from a container run.** Such a test would pass or fail on how busy the build machine is, and its
+   green result would mean nothing about the game. This is the specific mistake this constraint
+   exists to prevent.
+2. **Relative comparisons within one environment remain valid**, which is how the overlay's own cost
+   must be checked. FR-040 and SC-013 bound the overlay's cost to under 1 millisecond — that is a
+   difference between overlay-on and overlay-off measured in the same place, and it is testable
+   here. An absolute frame-time budget is not.
+3. **Any absolute performance figure offered as evidence must come from a run on real hardware**,
+   which means the host. Statistics captured in the container are still worth logging — they prove
+   the sampling, percentile, and record-writing machinery works — but they must never be quoted as
+   what the game performs like.
+
+The GPU is deliberately not exposed to this container: verification stays on software rendering so
+goldens remain reproducible and immune to host driver updates (research R2 and R10). Exposing it
+later is a separate decision that changes none of the above, because verification would stay on the
+software path regardless.
+
 **Scale/Scope**: Single developer, single-player game. ~15 new source files, ~3 shell scripts, one
 placeholder scene. Log retention 10 sessions; console history bounded.
 
