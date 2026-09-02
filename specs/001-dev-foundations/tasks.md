@@ -183,10 +183,10 @@ run a listed command, confirm its output appears, press backtick and confirm gam
 
 ### Tests for User Story 2 (write first, confirm failing) ⚠️
 
-- [ ] T019 [P] [US2] Write `tests/Core.Tests/Console/CommandLineParserTests.cs`: whitespace-separated
+- [X] T019 [P] [US2] Write `tests/Core.Tests/Console/CommandLineParserTests.cs`: whitespace-separated
       tokens, runs of whitespace collapsed, double-quoted tokens containing spaces held together, and
       an unterminated quote treated as a parse failure that runs nothing (contracts/console-commands.md).
-- [ ] T020 [P] [US2] Write `tests/Core.Tests/Console/CommandRegistryTests.cs`: registration and
+- [X] T020 [P] [US2] Write `tests/Core.Tests/Console/CommandRegistryTests.cs`: registration and
       case-insensitive resolution; a duplicate name is **rejected with the first registration
       retained** and never halts (FR-014); an unrecognized name yields a failure naming the input and
       pointing at `help` (FR-015); a handler that throws is caught at the registry boundary and
@@ -196,11 +196,11 @@ run a listed command, confirm its output appears, press backtick and confirm gam
       states and T023 implements — construction throws on an empty name, an empty summary, or a name
       containing whitespace. `CommandDescriptor` is a Core feature with behavior, so constitution II
       requires it ship with tests of its own rather than inheriting the registry's.
-- [ ] T021 [P] [US2] Write `tests/Core.Tests/Console/HelpCommandTests.cs`: bare `help` lists every
+- [X] T021 [P] [US2] Write `tests/Core.Tests/Console/HelpCommandTests.cs`: bare `help` lists every
       registered command as `name — summary` ordered by name and reflects whatever is registered at
       that moment; `help <command>` shows summary and usage; `help <unknown>` fails naming the unknown
       command and pointing back at bare `help` (FR-012).
-- [ ] T022 [P] [US2] Write `tests/Core.Tests/Diagnostics/BoundedLogTests.cs`: capacity is fixed at
+- [X] T022 [P] [US2] Write `tests/Core.Tests/Diagnostics/BoundedLogTests.cs`: capacity is fixed at
       construction and must be > 0, entries read oldest-first, and appending at capacity drops the
       oldest (FR-019).
 
