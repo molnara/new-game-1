@@ -486,7 +486,7 @@ trimming — nothing else depends on it.
 - [X] T064 [US5] Write `tests/Game.Tests/OverlayToggleTest.cs` (slow tier): the overlay toggles on and
       off across the node lifecycle, and sampling continues regardless of its visibility (FR-038,
       FR-045). Depends on T061, T062.
-- [ ] T065 [US5] Establish the overlay's own cost per FR-040/SC-013: compare mean frame time over at
+- [X] T065 [US5] Establish the overlay's own cost per FR-040/SC-013: compare mean frame time over at
       least **1000 frames** with `src/Game/Autoloads/PerfMonitor.cs`'s overlay visible against the
       same count with it hidden, on `scenes/Main.tscn` under identical run conditions, and confirm the difference is under 1 ms. A
       single-frame or short-sample comparison is not sufficient given software-rendering variance.
