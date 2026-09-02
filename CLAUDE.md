@@ -17,6 +17,8 @@ environment facts only.
 - Godot import cache: new/moved asset files need `godot --headless --import` before
   headless runs can load them. Missing-resource errors on files that exist = stale cache.
 - Logs: ~/.local/share/godot/app_userdata/new game 1/logs/ (game-*.log and godot.log).
+- python3 is available for throwaway one-off commands only. Project scripts live in
+  scripts/ as bash, or in C# under src/. Nothing checked in depends on Python.
 
 ## Workflow
 - Feature work happens on spec-kit branches; master merges by squash PR (host side).
