@@ -368,7 +368,7 @@ it stops at that stage, names it, and exits non-zero.
       requires for each capture target — by running `scripts/update-golden.sh main`
       in the container (never on the host — the host renders through a real GPU driver and will not
       match byte-for-byte, research R2). Read the image before committing it. Depends on T048.
-- [ ] T050 [US4] Create `scripts/verify.sh` with the six stages in order, stopping at the first
+- [X] T050 [US4] Create `scripts/verify.sh` with the six stages in order, stopping at the first
       failure (FR-028, FR-030): (1) `dotnet build`; (2) `dotnet format NewGame1.sln
       --verify-no-changes --no-restore` — bare, no subcommand, so whitespace, style and analyzers all
       run, and branching on its exit code, which **is** trustworthy — the machine check against a
