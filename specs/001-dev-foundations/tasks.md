@@ -384,7 +384,7 @@ it stops at that stage, names it, and exits non-zero.
       than zero **as well as** branching on the exit code, because a run executing zero tests exits 0
       and prints `Passed: 0 | Failed: 0 | Skipped: 0` (research R14); the style stage must fail if
       `.editorconfig` enforces no rule at `warning` or above (research R13). Depends on T050.
-- [ ] T052 [US4] Validate the failure modes from [quickstart.md](./quickstart.md) Story 4: break a
+- [X] T052 [US4] Validate the failure modes from [quickstart.md](./quickstart.md) Story 4: break a
       Core test → FAIL naming the Core stage, non-zero exit, later stages not run; break a
       `Game.Tests` assertion → FAIL naming the Godot stage with the suite, test, exception and source
       line surfaced verbatim (SC-015); run with `--run-tests=NoSuchSuite` → the stage must report FAIL
