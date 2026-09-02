@@ -359,7 +359,7 @@ it stops at that stage, names it, and exits non-zero.
       **0**, an exact match (FR-036). A missing golden is a failure naming
       `scripts/update-golden.sh`, never an implicit pass. Print the differing pixel count and the
       threshold it was judged against.
-- [ ] T048 [US4] Create `scripts/update-golden.sh` per contracts/cli-scripts.md — capture via
+- [X] T048 [US4] Create `scripts/update-golden.sh` per contracts/cli-scripts.md — capture via
       `screenshot.sh`, then copy over `tests/golden/<name>.png` (FR-035a). Print the reference path
       and whether it replaced an existing file; leave the existing reference untouched if the capture
       fails. It MUST NOT be a `verify.sh` stage: a gate that regenerates its own expectation cannot
