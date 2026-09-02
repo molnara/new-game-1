@@ -21,6 +21,7 @@ public partial class Main : Node
         var registry = GetNode<DevConsole>("/root/DevConsole").Registry;
         Logging.RegisterCommands(registry);
         ScreenshotCommand.Register(registry, new GodotScreenshotService());
+        GetNode<PerfMonitor>("/root/PerfMonitor").RegisterCommands(registry);
 
         var userArgs = OS.GetCmdlineUserArgs();
 

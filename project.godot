@@ -19,6 +19,7 @@ config/icon="res://icon.svg"
 
 DevConsole="*res://src/Game/Autoloads/DevConsole.cs"
 ScreenshotHarness="*res://src/Game/Autoloads/ScreenshotHarness.cs"
+PerfMonitor="*res://src/Game/Autoloads/PerfMonitor.cs"
 
 [debug]
 

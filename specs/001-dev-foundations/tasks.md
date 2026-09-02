@@ -476,13 +476,13 @@ trimming — nothing else depends on it.
       labelled (FR-037, FR-047), and rendering unavailable metrics as explicitly unavailable
       (FR-041a). Values stay legible over bright, dark or busy scene content (FR-039b). Off by default
       (FR-038). Depends on T059, T060.
-- [ ] T062 [US5] Register `perf` and `perfstats` with `CommandRegistry` from
+- [X] T062 [US5] Register `perf` and `perfstats` with `CommandRegistry` from
       `src/Game/Autoloads/PerfMonitor.cs` per contracts/console-commands.md: `perf` toggles display
       only and says which state it is now in, with sampling unaffected either way (FR-038);
       `perfstats` prints the current statistics with the sample count and without needing the overlay
       visible, saying so explicitly when below 1000 samples and reporting "no samples yet" before the
       first frame (FR-043, FR-044). Depends on T061, T027.
-- [ ] T063 [US5] Register `PerfMonitor` as an autoload in `project.godot`. Depends on T061.
+- [X] T063 [US5] Register `PerfMonitor` as an autoload in `project.godot`. Depends on T061.
 - [ ] T064 [US5] Write `tests/Game.Tests/OverlayToggleTest.cs` (slow tier): the overlay toggles on and
       off across the node lifecycle, and sampling continues regardless of its visibility (FR-038,
       FR-045). Depends on T061, T062.

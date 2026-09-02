@@ -1,5 +1,6 @@
 using Godot;
 using Microsoft.Extensions.Logging;
+using NewGame1.Core.Console;
 using NewGame1.Core.Diagnostics;
 using NewGame1.Infrastructure;
 
@@ -63,6 +64,53 @@ public partial class PerfMonitor : CanvasLayer
         }
 
         _overlayLabel.Text = "Perf overlay: waiting for samples...";
+    }
+
+    /// <summary>
+    /// Registers <c>perf</c> and <c>perfstats</c> against <paramref name="registry"/>
+    /// (contracts/console-commands.md). The overlay is otherwise unreachable (FR-038).
+    /// </summary>
+    public void RegisterCommands(CommandRegistry registry)
+    {
+        registry.Register(new CommandDescriptor(
+            "perf",
+            "Show or hide the performance overlay.",
+            "perf",
+            _ => HandlePerf()));
+
+        registry.Register(new CommandDescriptor(
+            "perfstats",
+            "Print the session's frame-time statistics.",
+            "perfstats",
+            _ => HandlePerfStats()));
+    }
+
+    private CommandResult HandlePerf()
+    {
+        var visible = !IsOverlayVisible;
+        SetOverlayVisible(visible);
+        return CommandResult.Ok(visible ? "Performance overlay shown." : "Performance overlay hidden.");
+    }
+
+    private CommandResult HandlePerfStats()
+    {
+        var stats = _histogram.Snapshot();
+
+        if (stats.SampleCount == 0)
+        {
+            return CommandResult.Ok("No samples yet.");
+        }
+
+        var message =
+            $"Frame time: average={stats.AverageMs:F3}ms p95={FormatPercentile(stats.P95Ms)} " +
+            $"p99={FormatPercentile(stats.P99Ms)} worst={stats.WorstMs:F3}ms samples={stats.SampleCount}";
+
+        if (stats.IsLowConfidence)
+        {
+            message += " (low confidence: fewer than 1000 samples)";
+        }
+
+        return CommandResult.Ok(message);
     }
 
     public override void _Ready()
