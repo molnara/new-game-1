@@ -483,7 +483,7 @@ trimming — nothing else depends on it.
       visible, saying so explicitly when below 1000 samples and reporting "no samples yet" before the
       first frame (FR-043, FR-044). Depends on T061, T027.
 - [X] T063 [US5] Register `PerfMonitor` as an autoload in `project.godot`. Depends on T061.
-- [ ] T064 [US5] Write `tests/Game.Tests/OverlayToggleTest.cs` (slow tier): the overlay toggles on and
+- [X] T064 [US5] Write `tests/Game.Tests/OverlayToggleTest.cs` (slow tier): the overlay toggles on and
       off across the node lifecycle, and sampling continues regardless of its visibility (FR-038,
       FR-045). Depends on T061, T062.
 - [ ] T065 [US5] Establish the overlay's own cost per FR-040/SC-013: compare mean frame time over at
