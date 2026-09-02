@@ -16,7 +16,7 @@
 - Q: Should this feature build the placeholder scene the screenshot harness and verify script capture, or does a real game scene arrive separately? → A: This feature ships a minimal placeholder main scene (flat background plus an identifying label) as the capture target, to be replaced by the first real scene.
 - Q: In a headless run, what should the harness wait for before capturing, so the image is not taken while the scene is still blank? → A: Wait for a fixed, configurable number of fully rendered frames (machine-speed independent), then capture.
 - Q: If a build is exported and given to another person, should the developer console still be in it? → A: Present in all builds and never compiled out, but in a distributed build it opens only when explicitly enabled by a launch flag or setting.
-- Q: Should verification stand up an engine-based test tier now, or run only the fast engine-free tests? → A: Fast engine-free tests only for now; the verification command is structured so an engine tier can be added as a later stage without restructuring.
+- Q: Should verification stand up an engine-based test tier now, or run only the fast engine-free tests? → A: Fast engine-free tests only for now; the verification command is structured so an engine tier can be added as a later stage without restructuring. — **SUPERSEDED 2026-09-02, see below.**
 
 ### Session 2026-09-02
 
@@ -25,6 +25,7 @@
 - Q: Which memory figure should the overlay and log report? → A: Two labelled figures — total process memory and video memory — so both runaway allocation and texture/mesh bloat are visible.
 - Q: How often should the overlay refresh its numbers? → A: About 4 times per second, showing each interval's average, with that interval's worst frame displayed separately so brief stalls are not averaged away.
 - Q: How many frames must a session have before its 99th-percentile figure is treated as trustworthy? → A: 1000 frames (~17 seconds at 60 fps); below that the record is still written but marked low-confidence.
+- Q: Should this feature stand up the engine-based test tier, reversing the 2026-09-01 answer? → A: Yes. Both tiers ship from the start — a fast engine-free tier and a slower Godot tier — and verification runs both. **This supersedes the 2026-09-01 answer** ("fast engine-free tests only for now"), which had left node and input behavior (FR-011, SC-007) to a manual checklist run on the host.
 
 ## User Scenarios & Testing *(mandatory)*
 
@@ -333,11 +334,27 @@ statistics. Delivers value on its own: performance becomes observable both live 
 
 #### Verification
 
-- **FR-028**: The project MUST provide a single command that runs, in order: the build, the
-  engine-free test suite, and a screenshot capture.
-- **FR-028a**: Verification MUST be structured so that further stages — notably an engine-based test
-  tier, once anything needs one — can be inserted as additional stages without reworking the
-  command or its reporting.
+- **FR-028**: The project MUST provide a single command that runs, in order: the build, an automated
+  code-style check, the engine-free test suite, the engine-based test suite, and a screenshot
+  capture.
+- **FR-028a**: Verification MUST be structured so that further stages can be inserted as additional
+  stages without reworking the command or its reporting. (The engine-based tier this requirement was
+  originally written to accommodate is now a stage in its own right — see FR-028c — so this
+  requirement now covers stages not yet foreseen.)
+- **FR-028c**: The project MUST provide two distinct automated test tiers: a fast tier covering
+  engine-free logic, and a slower tier that runs inside the engine and covers behavior that cannot be
+  expressed without it. Both MUST be runnable independently and both MUST run as stages of the
+  verification command.
+- **FR-028d**: The engine-based tier MUST run unattended without a display, on the same software
+  rendering path as the rest of verification, so it is runnable wherever the fast tier is.
+- **FR-028e**: The console behavior that cannot be expressed engine-free — that opening the console
+  does not deliver the opening keystroke into the console's own input, and that the console opens
+  within a single displayed frame — MUST be covered by the engine-based tier rather than by a manual
+  checklist.
+- **FR-028b**: Code style MUST be enforced by a machine check reading a checked-in configuration
+  file, and that configuration MUST be the definition of the project's style — not prose in a
+  document and not a reviewer's judgement. The check MUST report violations without modifying source
+  files, and MUST fail verification when any are found.
 - **FR-029**: Verification MUST print a per-stage pass or fail summary and the path of the captured
   screenshot.
 - **FR-030**: Verification MUST stop at the first failing stage, name that stage, and surface enough
@@ -467,6 +484,14 @@ statistics. Delivers value on its own: performance becomes observable both live 
   percentile, 99th percentile, and worst frame time in the log by searching it once.
 - **SC-013**: Turning the overlay on changes measured frame time by less than 1 millisecond, so the
   act of measuring does not distort what is being measured.
+- **SC-014**: A style violation introduced into any checked-in C# source file is reported by the
+  verification command, naming the file, the line, and the rule — with no source file modified by
+  the check itself.
+- **SC-015**: Both test tiers run from the single verification command on a machine with no display,
+  and a deliberately broken test in either tier fails that command — so neither tier can rot unnoticed
+  by being runnable only by hand.
+- **SC-016**: Opening and closing the console, and the keystroke isolation that goes with it, are
+  verified without a human performing the steps.
 
 ## Assumptions
 
@@ -496,8 +521,10 @@ reversible decision, recorded here so planning can challenge it.
   name replaces the previous one so the latest evidence is always at a predictable path.
 - **`artifacts/` is disposable**: it is not tracked in version control and may be deleted at any
   time; nothing may depend on its contents surviving.
-- **Verification stages**: build, then the engine-free test suite, then one screenshot. An
-  engine-based tier is deliberately absent until something needs it (see Clarifications); the stage
+- **Verification stages**: build, then the automated code-style check, then the engine-free test
+  suite, then the engine-based test suite, then one screenshot. The style stage was added to match
+  Constitution VI ("Standards Are Automated") and the engine tier to match Constitution II
+  ("Test-First, Two Tiers"), both of which make their stage a required part of the gate. The stage
   order and the fail-fast behavior are the fixed part, the stage list is not.
 - **Environment**: development happens without a GPU or real display, so every automated path must
   work under software rendering, and this feature must not assume a windowed session.
@@ -523,8 +550,6 @@ reversible decision, recorded here so planning can challenge it.
   commands as it is built.
 - A graphical log viewer, in-game log overlay, or filtering UI. Logs are read as files.
 - Video or animated capture, and capture of anything other than the rendered view.
-- An engine-based test tier. Nothing in this feature needs one, so the test project for it is not
-  created here; verification is built to accept it as a stage when it arrives.
 - Continuous integration configuration. The verification command is what such a system would call;
   wiring it up is separate.
 - A full profiler. Per-system or per-function timing breakdowns, flame graphs, allocation tracking,

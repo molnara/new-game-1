@@ -51,7 +51,27 @@ the kill are present. Losing the tail of debug/info chatter is expected and corr
 
 ## Story 2 — Console lists and runs commands
 
-Needs an interactive display, so this one is run on the host rather than in the container:
+Most of this is automated. The slow test tier covers the parts that need the engine, and it runs in
+the container:
+
+```bash
+xvfb-run -a godot --rendering-method forward_plus --rendering-driver vulkan \
+  --audio-driver Dummy res://scenes/Main.tscn -- --run-tests=ConsoleInputTest --quit-on-finish
+```
+
+**Expect**: every suite reported passing — the toggle opens and closes the console (FR-010), the
+toggle keystroke does not land in the input field (FR-011), and the open completes within a single
+displayed frame (SC-007). `scripts/verify.sh` runs the same tier as stage 4, so a regression here
+fails the gate rather than waiting for someone to notice by hand.
+
+The **fast tier** covers every console decision that does not need the engine — parsing, resolution,
+duplicate registration, help formatting, the bounded history:
+
+```bash
+dotnet test tests/Core.Tests
+```
+
+What remains genuinely manual is only what a human has to *look at*, and it is run on the host:
 
 1. Launch the game and press **backtick**.
 2. The console opens, the input field has focus, and no `` ` `` character appears in it (FR-011).
@@ -62,9 +82,9 @@ Needs an interactive display, so this one is run on the host rather than in the 
 7. Press backtick again → the console closes and gameplay input resumes (FR-010).
 8. Quit, then confirm the commands and their results appear in the session log (FR-018).
 
-**In-container substitute** for what can be automated: the Core tests cover parsing, resolution,
-duplicate registration, help formatting, and the bounded history — every decision in the console
-except the keystrokes themselves.
+Steps 3-5 and 8 above are already asserted by the two tiers; repeat them by hand only when changing
+how output is presented. Steps 2, 6 and 7 are the ones worth a human eye — whether the console
+*reads* well, not whether it works.
 
 ---
 
@@ -107,15 +127,61 @@ renderer has no viewport texture (research R1). If a capture ever appears to han
 scripts/verify.sh; echo "exit=$?"
 ```
 
-**Expect**: `PASS` for build, Core tests, screenshot, and golden compare; `exit=0`.
+**Expect**: `PASS` for build, code style, Core tests, Godot tests, screenshot, and golden compare;
+`exit=0`.
 
 Now prove it actually fails when it should:
 
 ```bash
-# Break a test deliberately, then:
-scripts/verify.sh; echo "exit=$?"     # expect FAIL naming the test stage, exit non-zero,
-                                      # and no screenshot stage output (fail-fast, FR-030)
+# Break a Core test deliberately, then:
+scripts/verify.sh; echo "exit=$?"     # expect FAIL naming the Core test stage, exit non-zero,
+                                      # and no Godot/screenshot stage output (fail-fast, FR-030)
 ```
+
+**Both tiers must be able to fail the gate** (SC-015). Test the slow one separately, because it is
+the one that can silently pass by running nothing:
+
+```bash
+# Break a Game.Tests assertion deliberately, then:
+scripts/verify.sh; echo "exit=$?"     # expect FAIL naming the Godot test stage, exit non-zero
+```
+
+**Expect** the failing suite, test name, exception message and source line in the output, and
+`Test results: Passed: N | Failed: 1 | ...`.
+
+Then check the trap the spike found (research R14) — a run executing **zero** tests exits 0 and
+reports success:
+
+```bash
+xvfb-run -a godot --rendering-method forward_plus --rendering-driver vulkan \
+  --audio-driver Dummy res://scenes/Main.tscn -- --run-tests=NoSuchSuite --quit-on-finish
+echo "exit=$?"     # 0, with "Passed: 0 | Failed: 0 | Skipped: 0"
+```
+
+`verify.sh` must report **FAIL** for that, not PASS. If it passes, the stage is asserting only on the
+exit code and would stay green if the tests ever stopped being discovered.
+
+**The code-style stage** (FR-028b, SC-014). Prove it catches more than whitespace — that is the
+specific way this stage fails silently (research R13):
+
+```bash
+# In any checked-in .cs file, add an unused `using System.Text;` and change one
+# `string` to `String`, keeping the indentation correct. Then:
+scripts/verify.sh; echo "exit=$?"
+```
+
+**Expect**: `FAIL` at the style stage naming file, line and rule id (`IDE0005`, `IDE0049`), exit
+non-zero, and the test and screenshot stages not run. If this passes, `.editorconfig` is not setting
+those rules to `warning` or above and the stage is checking almost nothing.
+
+Then confirm the check did not edit anything on its way past:
+
+```bash
+git status --short     # after a clean run: no modified files
+```
+
+The gate uses `--verify-no-changes`; to actually apply the fixes, run `dotnet format` yourself
+without that flag. Style is settled by editing `.editorconfig`, never by argument — constitution VI.
 
 **Golden images**: regenerate in the container, never on the host — the container rasterizes in
 software through llvmpipe while the host's editor uses its real GPU driver, so the two will not
@@ -132,6 +198,10 @@ Constitution IV requires a golden change to be intentional and explained in the 
 ---
 
 ## Story 5 — Performance overlay and frame-time statistics
+
+The toggle and the always-on sampling are covered by the slow tier
+(`--run-tests=OverlayToggleTest`, FR-038 and FR-045), so what follows is the part a human has to
+look at.
 
 **Live overlay** (needs a display, so run on the host):
 
@@ -155,7 +225,8 @@ grep -i "frame" "$(ls -t "$LOGDIR"/session-*.log | head -1)"
 distinguishable (FR-046, FR-046a), each carrying average, p95, p99, worst and a sample count.
 
 **Prove sampling does not depend on the overlay** (FR-045): the run above never opened the console,
-and must still produce statistics.
+and must still produce statistics. `--run-tests=OverlayToggleTest` asserts the same thing without a
+display.
 
 **Prove crash-survival** (FR-046b): start the game, `kill -9` it after a few seconds, and confirm the
 most recent interim record is on disk despite no clean shutdown.

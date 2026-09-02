@@ -347,7 +347,228 @@ at the resolution that matters here).
 
 ---
 
+## R13. What `dotnet format` actually enforces (spike-verified)
+
+Constitution VI (added in v1.1.0) makes `dotnet format` a commit gate and a `verify.sh` stage, and
+declares `.editorconfig` plus the .NET analyzers the sole definition of code style. That raised two
+questions planning had never asked: what does the command check, and does the repository's existing
+configuration make it check anything worth gating on.
+
+**Spike**: built the solution, then dropped a deliberately malformed C# file into `src/Core` and ran
+`dotnet format NewGame1.sln --verify-no-changes --no-restore` against the repository's current
+four-line `.editorconfig` (`root = true`, `charset = utf-8`).
+
+**Result 1 — whitespace is caught.** Bad indentation, stray spaces before `;` and inside `( )`, and
+a brace on the wrong line each produced an `error WHITESPACE` line naming file, line, column, and the
+edit that would fix it.
+
+**Result 2 — and nothing else is.** A second file with correct whitespace but real style defects —
+an unused `using`, `String` where `string` belongs, and `System` directives sorted after others —
+**passed with exit code 0 and no output**. The IDE analyzers that catch these default to suggestion
+or silent severity, and `dotnet format` fixes at `warn` and above.
+
+**Result 3 — populating `.editorconfig` fixes it.** Adding explicit severities
+(`dotnet_diagnostic.IDE0005.severity = warning`, `IDE0049`, `IDE0055`, `dotnet_sort_system_directives_first`)
+and re-running the identical file produced exit code 2 and three findings: `IMPORTS: Fix imports
+ordering`, `IDE0049: Name can be simplified`, `IDE0005: Using directive is unnecessary`.
+
+**Decision**: expanding `.editorconfig` from four lines to a real C# style configuration is a
+*required task of this feature*, not a tidy-up to do later. Wiring `dotnet format` into `verify.sh`
+against the current file would add a stage that passes almost unconditionally — a green gate that
+checks nothing, which is worse than no gate because it is mistaken for coverage. Constitution VI says
+style is defined by `.editorconfig`; today that file defines a character set.
+
+**Command form for the gate**: `dotnet format NewGame1.sln --verify-no-changes --no-restore`.
+
+| Aspect | Finding |
+|---|---|
+| Subcommands | Bare `dotnet format` runs `whitespace`, `style` and `analyzers` together. The gate wants all three; do not name a subcommand. |
+| Exit code | `0` clean, `2` when changes would be made. Unlike Godot (research R4), this exit code **is** trustworthy and is the right thing to branch on. |
+| Output | One line per violation, `path(line,col): severity ID: message` — already in the shape an editor or agent can jump to. Reported to stdout. |
+| `--verify-no-changes` | Reports without writing. The gate must use it: a verification script that silently reformats the tree turns a check into an edit. |
+| `--no-restore` | Safe here because the build stage runs first and has already restored. Saves a redundant restore on every run. |
+| Generated files | Skipped unless `--include-generated` is passed. Godot's `*.g.cs` and the SDK's `AssemblyInfo`/`GlobalUsings` files are therefore out of scope automatically — no exclude list needed. |
+| Project loading | The spike ran across the whole solution, Godot's `NewGame1.csproj` included, with no load error. Formatting does not need the editor or an import pass. |
+
+**Alternatives considered**: a pre-commit hook instead of a `verify.sh` stage (rejected — the
+constitution names `verify.sh` as the gate, and a hook is per-clone state that does not survive a
+fresh checkout; a hook may be added later as an *additional* early warning, but it cannot be the
+enforcement point); `TreatWarningsAsErrors` to fail the build on style (rejected — it conflates style
+with correctness, would fail builds mid-edit during development, and `Directory.Build.props`
+deliberately sets it `false`); running only `dotnet format whitespace` for speed (rejected — it is
+exactly the subset the spike proved insufficient).
+
+---
+
+## R14. The engine test tier: how GoDotTest runs (spike-verified)
+
+The 2026-09-01 clarification deferred an engine test tier. That decision was reversed on 2026-09-02:
+the developer wants both tiers standing — a fast engine-free one and a slower Godot one. This entry
+records how the slow tier actually works, because its shape constrains files this plan already names.
+
+`Chickensoft.GoDotTest` 2.0.46 is already referenced in `NewGame1.csproj`, and the skeleton already
+carries `<Compile Remove="tests/Game.Tests/**" Condition="'$(Configuration)' == 'ExportRelease'" />`.
+The tier was anticipated by the repository before this feature existed; what was missing is the
+project and the entry point.
+
+**The runner lives inside the game, not outside it.** Unlike `dotnet test`, GoDotTest does not host
+the assembly — Godot does. The main scene's root script inspects the command line, and if tests were
+requested it hands its own assembly to the runner instead of starting the game:
+
+| Element | Contract |
+|---|---|
+| Entry point | The main scene's root script `_Ready()`, guarded by `#if DEBUG`. |
+| Detection | `TestEnvironment.From(OS.GetCmdlineUserArgs())`, then `Environment.ShouldRunTests`. **Note: user args, not `GetCmdlineArgs()` as the package README shows** — see the argument-delivery finding below. |
+| Invocation | `GoTest.RunTests(Assembly.GetExecutingAssembly(), this, Environment)`, deferred via `CallDeferred`. |
+| Flags | `--run-tests` (optionally `=Suite` or `=Suite.Method`), `--quit-on-finish`. These are GoDotTest's, not Godot's. |
+| Test assembly | The **game** assembly. `tests/Game.Tests` compiles into `NewGame1`, which is why the `ExportRelease` exclusion above exists. |
+| Namespace | `Chickensoft.GoDotTest` (the README uses a bare `GoDotTest` in three of its six examples; that namespace does not exist in the shipped assembly). |
+
+**Argument delivery — the package README's form does not fit this project.** GoDotTest's example
+reads `OS.GetCmdlineArgs()`, which in Godot 4 returns engine arguments and **excludes** everything
+after a `--` separator; those go to `OS.GetCmdlineUserArgs()` (research R5). Measured, with the
+identical build:
+
+| Invocation | `GetCmdlineArgs` | `GetCmdlineUserArgs` | Tests ran |
+|---|---|---|---|
+| `... Main.tscn -- --run-tests --quit-on-finish` reading `GetCmdlineArgs` | `[Main.tscn]` | `[--run-tests, --quit-on-finish]` | **No** — and the process hung until killed at 90 s |
+| `... Main.tscn --run-tests --quit-on-finish` reading `GetCmdlineArgs` | `[Main.tscn, --run-tests, --quit-on-finish]` | `[]` | Yes |
+| `... Main.tscn -- --run-tests --quit-on-finish` reading **`GetCmdlineUserArgs`** | `[Main.tscn]` | `[--run-tests, --quit-on-finish]` | **Yes** |
+
+**Decision**: build the environment from `OS.GetCmdlineUserArgs()`. `TestEnvironment.From` accepts
+either array, and using user args keeps one convention across the whole feature — the screenshot
+harness already receives `-- --screenshot <name>` that way (research R5). Following the README
+instead would leave `Main.cs` reading two different argument arrays for two different flags, which is
+the kind of avoidable inconsistency that gets one of them wrong later.
+
+The hang in the first row is worth noting on its own: when the flag does not arrive, the game simply
+starts and runs forever. A CI or agent invocation with a malformed argument does not fail — it
+blocks. Every automated Godot invocation needs an external timeout regardless of `--quit-on-finish`.
+
+**Exit codes — R4 does not apply here, and the earlier provisional contract was wrong.** This entry
+originally assumed research R4's warning ("Godot's exit code is not trustworthy") carried over.
+Measured, it does not: GoDotTest sets the process exit code deliberately.
+
+| Case | Exit code | Result line |
+|---|---|---|
+| 2 tests, both passing | `0` | `Test results: Passed: 2 \| Failed: 0 \| Skipped: 0` |
+| 1 passing, 1 throwing | `1` | `Test results: Passed: 1 \| Failed: 1 \| Skipped: 0` |
+| Scene path does not exist | `1` | none — engine error before the runner starts |
+| `--run-tests=NoSuchSuite` | **`0`** | `Test results: Passed: 0 \| Failed: 0 \| Skipped: 0` |
+
+**The last row is the trap, and it is the same shape as the `.editorconfig` finding in R13**: a run
+that executes nothing exits 0 and reports success. Three realistic ways to reach it — a typo in a
+suite filter, a build configuration that excluded `tests/Game.Tests/**` (which `NewGame1.csproj`
+does under `ExportRelease`), or every test being renamed out of discovery — all produce a green
+stage that verified nothing.
+
+**Decision**: the `verify.sh` stage branches on the exit code **and** asserts that the reported
+`Passed:` count is greater than zero. Neither check alone is sufficient: the exit code misses the
+empty run, and the results line is absent entirely when the engine dies before the runner starts.
+
+**Failure output is good enough to act on.** A failing test prints the suite, the test name, the
+exception message, and a stack trace carrying the source file and line
+(`at NewGame1.Tests.SpikeTest.PassesTrivially() in /workspace/tests/Game.Tests/SpikeTest.cs:line 13`).
+The stage should surface it verbatim rather than summarising.
+
+**Incidental**: Godot 4.7 writes a `*.cs.uid` file next to every C# script it imports. They appeared
+for both spike scripts; `.gitignore` does not cover them. Followed up and resolved in R15 — they are
+committed.
+
+**Consequence for `src/Game/Main.cs`.** Constitution VI required that file to exist so
+`scenes/Main.tscn` has a root script matching its name (see the plan's v1.1.0 delta). R14 gives it a
+second job: it is also the test tier's entry point. GoDotTest's own documented example names the
+class `Main`, so the two requirements coincide rather than conflict. `Main.cs` therefore branches
+three ways — run tests, capture a screenshot, or be the placeholder scene — and that branching is the
+one piece of it worth reviewing carefully, because every automated path in this feature goes through
+it.
+
+**Consequence for `verify.sh`.** The Godot test stage is a Godot *run*, not a `dotnet` invocation, so
+everything research R1 and R10 established about running the engine here applies to it: `xvfb-run`
+rather than `--headless`, `--rendering-method forward_plus --rendering-driver vulkan`,
+`--audio-driver Dummy`. Research R4 does **not** carry over: GoDotTest sets the exit code
+deliberately, as measured above. The stage branches on the exit code *and* asserts a non-zero
+`Passed:` count, because an empty run exits 0.
+
+**What this tier unlocks that Core tests cannot reach.** The manual host checklist in
+`quickstart.md` Story 2 is the direct evidence that the deferral pushed real verification onto a
+human: FR-011 (the backtick that opens the console must not land in the input field) and SC-007
+(open within one displayed frame) are node and input behavior with no Core representation. Godot can
+synthesise input events in-process, so these become automatable. The same applies to the overlay
+toggle in Story 5.
+
+**Decision**: stand the tier up in this feature. Both tiers exist from the start, `verify.sh` runs
+both, and the constitution's stage list is satisfied literally rather than by argument. The spike
+below confirms this works with the packages already referenced — no csproj change at all.
+
+**Spike record (2026-09-02)**: run with the developer's permission to create `scenes/Main.tscn`. A
+minimal `Main.cs`, a two-test `SpikeTest`, and a bare `Node2D` scene were created, exercised in the
+configurations tabled above, then removed; the tree is back to its pre-spike state and the import
+cache was refreshed. Confirmed end to end in this container: GoDotTest launches under `xvfb-run` on
+Forward+ software Vulkan, discovers suites by reflection, runs them, lets a test add a node to the
+live scene tree, reports per-test results, and quits on its own with `--quit-on-finish`.
+
+The verified invocation:
+
+```bash
+xvfb-run -a godot --rendering-method forward_plus --rendering-driver vulkan \
+  --audio-driver Dummy res://scenes/Main.tscn -- --run-tests --quit-on-finish
+```
+
+**Alternatives considered**: keeping the tier deferred and the host checklist (rejected — the
+developer asked for both tiers, and constitution II already requires engine tests for behavior that
+cannot move into Core, which FR-011 and SC-007 cannot); a separate test-only Godot project (rejected
+— GoDotTest reflects over the *executing* assembly, so tests must compile into the game assembly, and
+the skeleton's `ExportRelease` exclusion already implements that); running the tier only on the host
+(rejected — it would leave `verify.sh` unable to run its own gate in the container, which is where
+all agent work happens).
+
+---
+
+## R15. Godot's `*.cs.uid` files belong in version control (spike-verified)
+
+Found incidentally while running the R14 spike: Godot 4.7 writes a `<script>.cs.uid` file next to
+every C# script it imports — 19 bytes of plain text, e.g. `uid://udjt5rorljpy`. The repository's
+`.gitignore` covers `.godot/`, `bin/`, `obj/` and `artifacts/`, none of which match, so the question
+had to be answered rather than left to whichever pattern happened to catch them.
+
+**The decisive test is a rename**, because surviving a move is the entire purpose of a UID. The same
+script was renamed twice, once carrying its `.uid` and once without:
+
+| Rename | Before | After | Outcome |
+|---|---|---|---|
+| `.uid` moved with the script (what git does when it is committed) | `uid://bu855qri0pifd` | `uid://bu855qri0pifd` | Identity **preserved** |
+| `.uid` absent (what happens if it is ignored) | `uid://bu855qri0pifd` | `uid://ck7s7n3tfmjww` | Identity **lost** — a new one is minted |
+
+**Decision**: commit `*.cs.uid` alongside the scripts. Leave `.gitignore` unchanged.
+
+**Rationale**: Godot 4.4+ writes `uid://` references into `.tscn` and `.tres` files rather than plain
+paths, which is what lets a scene keep pointing at a script after it moves. That indirection only
+holds if the UID is stable, and the `.uid` file is the only thing that makes it stable. Ignore them
+and every fresh clone, CI checkout, and file rename is free to mint a different identity for the same
+script — silently, with the breakage appearing later as a scene that has lost its script.
+
+**They are not build output.** Regenerating repeatedly at a fixed path produced a byte-identical
+value every time, and a grep of `.godot/` for the UID string found nothing retaining it — so these
+are source-adjacent metadata, not cache, and they do not belong beside `bin/` and `obj/`.
+
+**Practical consequence for this feature**: `src/Game/Main.cs.uid` and one file per
+`tests/Game.Tests/*.cs` are expected additions in the implementation diff, not noise to be stripped.
+Every future C# script adds one.
+
+**A false lead, recorded so it is not rediscovered**: an early probe appeared to show that *editing*
+a script changes its UID, which would have been alarming. That result was contaminated — the probe
+had accidentally created two files declaring the same class name, which perturbs Godot's global
+script class registration. Re-tested cleanly, an edit at a fixed path leaves the UID untouched. Only
+the path, and the presence or absence of the `.uid` file, matter.
+
+---
+
 ## Remaining unknowns
 
-None. No `NEEDS CLARIFICATION` markers remain in the Technical Context.
+No `NEEDS CLARIFICATION` markers remain in the Technical Context.
+
+Nothing is left open. The R14 runtime spike was run on 2026-09-02 and its results are recorded
+there, and the `*.cs.uid` question it raised is answered in R15. Every engine claim in this document
+is spike-verified rather than inferred.
 

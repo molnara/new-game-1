@@ -112,3 +112,81 @@ The project constitution (v1.0.0) already assumes this feature's outputs exist �
 per-system logger, a dev console command for every gameplay system, screenshot evidence, and a
 verification command as the quality gate. Principle III's "every gameplay system exposes a console
 command" is satisfied by the profiling story's toggle and statistics commands.
+
+### Validation record (iteration 3 — constitution v1.1.0, principle VI)
+
+Re-validated after the constitution added **VI. Standards Are Automated** and expanded the
+`verify.sh` gate to include `dotnet format`. The spec was amended to match; every box above still
+holds.
+
+- **Requirements added by this session**: FR-028b (style enforced by a machine check against a
+  checked-in configuration, reporting without modifying source) and SC-014 (a style violation in any
+  checked-in source file is reported with file, line and rule, and nothing is rewritten by the
+  check). FR-028's stage list and the "Verification stages" assumption were amended to include the
+  stage.
+- **Still passing — no implementation details**: FR-028b names no tool, language, or file. It says
+  "a checked-in configuration file" and "a machine check", which is the outcome; `dotnet format` and
+  `.editorconfig` appear only in `plan.md` and the contracts, where implementation belongs.
+- **Still passing — success criteria are measurable**: SC-014 is checkable by introducing one
+  violation and reading the output, and it deliberately asserts the negative half too (no file
+  modified), because a check that silently reformats would otherwise satisfy the positive half.
+- **Scope grew, and it is recorded**: one verification stage and one configuration file. The plan's
+  "Constitution v1.1.0 delta" section carries the reasoning and names the work; this is the second
+  time the constitution has outranked the spec on this feature, after golden images in iteration 2.
+
+### Superseded
+
+The iteration-2 "Recommended next step" (re-run `/speckit-plan` for the profiling story) has been
+carried out — `plan.md` now covers the overlay, its constitution rows, and research R11/R12. The
+"Constitution alignment" note below was written against constitution v1.0.0; v1.1.0 adds principle
+VI, whose effect on this feature is recorded in the plan's delta section and in iteration 3 above.
+
+### Validation record (iteration 4 — engine test tier, deferral reversed)
+
+The 2026-09-01 clarification "fast engine-free tests only for now" was reversed on 2026-09-02: the
+developer wants both tiers standing. Re-validated after the amendment; every box above still holds.
+
+- **Requirements added**: FR-028c (two distinct tiers, both runnable independently and both stages of
+  verification), FR-028d (the engine tier runs unattended without a display), FR-028e (console
+  keystroke isolation and single-frame open belong to the engine tier, not a manual checklist), plus
+  SC-015 (a broken test in either tier fails the command) and SC-016 (console open/close verified
+  without a human).
+- **Requirements amended**: FR-028's stage list; FR-028a narrowed to stages not yet foreseen, since
+  the tier it was written to accommodate now exists; the "Verification stages" assumption. The
+  superseded clarification is marked in place rather than deleted, so the reversal is legible.
+- **Removed from Out of Scope**: the engine-based test tier bullet.
+- **What the original deferral got wrong**: it rested on "nothing in this feature needs an engine
+  test", while `quickstart.md` Story 2 simultaneously routed FR-011 and SC-007 to an eight-step
+  manual checklist run on the host. Those are node and input behavior with no Core representation —
+  constitution II's stated condition for the slow tier. The work was never absent, only unautomated.
+  A spec whose Out of Scope and whose validation guide disagree about the same behavior is the
+  inconsistency `/speckit-analyze` looks for, and it survived two prior iterations unnoticed.
+- **Still passing — the slow tier stays the exception**: five slow-tier cases are named, each with a
+  stated reason it cannot be a Core test. Registry, parser, help, history, retention and percentiles
+  all remain fast-tier.
+- **Open item, deliberately marked**: research R14 records that GoDotTest has not been runtime-spiked
+  under `xvfb-run` here, unlike every other engine claim in that document. It is blocked on
+  permission to create `scenes/Main.tscn`.
+
+### Validation record (iteration 5 — R14 spike run)
+
+The engine-tier spike deferred in iteration 4 was run on 2026-09-02 with the developer's permission
+to create `scenes/Main.tscn`. Spike files were removed afterwards; the tree is back to its pre-spike
+state. No requirement changed — the spike confirmed the tier is buildable as specified — but two
+contract details were corrected.
+
+- **Corrected**: the Godot test stage had provisionally inherited research R4's "exit codes are not
+  trustworthy". Measured, GoDotTest sets the exit code deliberately (0 pass, 1 fail), so R4 does not
+  apply to this stage. The contract said the right thing for the wrong reason.
+- **Corrected**: argument delivery. Reading `OS.GetCmdlineArgs()` as the package README shows does
+  not see arguments after `--`; the tests silently do not run and the process hangs. The tier reads
+  `OS.GetCmdlineUserArgs()`, matching the screenshot harness convention.
+- **New risk, now covered**: a run executing zero tests exits 0 and reports success. FR-028c is
+  satisfiable by a stage that never runs a test, so the contract now requires asserting a non-zero
+  passed count. SC-015 ("a broken test in either tier fails the command") already implied this;
+  `quickstart.md` now exercises it explicitly. This is the second gate in this feature that could
+  have shipped green while verifying nothing — see R13 for the first.
+- **Resolved, not handed off**: whether Godot's generated `*.cs.uid` files are committed. Tested by
+  renaming a script with and without its `.uid`; without it, a new UID is minted and the old
+  reference is dead. They are committed, `.gitignore` is unchanged, and the expected additions are
+  named in the plan (research R15).

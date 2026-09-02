@@ -189,6 +189,7 @@ Core never touches the filesystem.
 
 | Type | Role |
 |---|---|
+| `Main` (root script of `scenes/Main.tscn`) | Placeholder capture target (FR-033). Named to match its scene file, as constitution VI requires of every scene root. |
 | `DevConsole` (autoload, `CanvasLayer`) | Input handling, text display, focus management. Delegates every decision to `CommandRegistry`. |
 | `ScreenshotHarness` (autoload, `Node`) | Reads user cmdline args, counts frames, calls `IScreenshotService`, quits with a status. Inert when `--screenshot` is absent. |
 | `GodotScreenshotService` | Implements Core's `IScreenshotService` using the viewport texture. |
@@ -197,6 +198,11 @@ Core never touches the filesystem.
 | `PerfMonitor` (autoload) | Samples every frame into the histogram from startup regardless of overlay visibility (FR-045), draws the overlay `CanvasLayer` at 4 Hz, and writes interim and final statistics records. |
 | `GodotPerformanceCounters` | Implements Core's `IPerformanceCounters`. |
 | `WarnErrorFlushSink` | Decorator forcing a disk flush at Warning and above (FR-005). |
+
+**Naming (constitution VI)** applies to every row above: scene files are PascalCase and match their
+root script's class name, signals are PascalCase, and `[Export]` fields carry no prefix. C# style
+beyond that is not stated here or anywhere else in prose — it lives in `.editorconfig` and is
+enforced by the `verify.sh` style stage (research R13).
 
 ---
 
