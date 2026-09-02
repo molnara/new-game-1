@@ -1,6 +1,7 @@
 using System.Text;
 using Godot;
 using Microsoft.Extensions.Logging;
+using NewGame1.Core.Console;
 using NewGame1.Core.Diagnostics;
 using Serilog;
 using Serilog.Core;
@@ -25,6 +26,8 @@ public static class Logging
 {
     private const string LogLineTemplate =
         "{Timestamp:yyyy-MM-dd HH:mm:ss.fff} [{Level:u3}] {SourceContext}: {Message:lj}{NewLine}{Exception}";
+
+    private static readonly string[] ValidLevelNames = ["debug", "information", "warning", "error"];
 
     private static readonly LoggingLevelSwitch LevelSwitch = new(LogEventLevel.Information);
 
@@ -84,6 +87,19 @@ public static class Logging
     /// <summary>Obtains a logger labelled with <typeparamref name="T"/>'s own name (FR-004).</summary>
     public static ILogger<T> For<T>() => Factory.CreateLogger<T>();
 
+    /// <summary>
+    /// Registers the <c>loglevel</c> command (FR-003) — every system here exposes at least one
+    /// console command (constitution III), and logging otherwise has none.
+    /// </summary>
+    public static void RegisterCommands(CommandRegistry registry)
+    {
+        registry.Register(new CommandDescriptor(
+            "loglevel",
+            "Show or set the minimum log severity for this session.",
+            "loglevel [debug|information|warning|error]",
+            HandleLogLevel));
+    }
+
     /// <summary>Flushes and closes the pipeline so the final batch reaches disk (FR-005).</summary>
     public static void Shutdown()
     {
@@ -123,6 +139,24 @@ public static class Logging
                 Console.WriteLine($"[Logging] Could not prune old session log '{name}': {ex.Message}");
             }
         }
+    }
+
+    private static CommandResult HandleLogLevel(CommandArgs args)
+    {
+        if (args.Positional.Count == 0)
+        {
+            return CommandResult.Ok(MinimumLevel.ToString());
+        }
+
+        var requested = args.Positional[0];
+        if (!ValidLevelNames.Contains(requested, StringComparer.OrdinalIgnoreCase)
+            || !Enum.TryParse<LogEventLevel>(requested, ignoreCase: true, out var parsed))
+        {
+            return CommandResult.Fail($"Unrecognized log level '{requested}'. Valid levels: {string.Join(", ", ValidLevelNames)}.");
+        }
+
+        MinimumLevel = parsed;
+        return CommandResult.Ok($"Minimum log level set to {parsed}.");
     }
 
     private static bool TryGetFlagValue(string[] args, string flag, out string value)

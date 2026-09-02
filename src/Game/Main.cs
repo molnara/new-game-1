@@ -2,6 +2,7 @@ using System.Reflection;
 using Chickensoft.GoDotTest;
 using Godot;
 using Microsoft.Extensions.Logging;
+using NewGame1.Autoloads;
 using NewGame1.Infrastructure;
 
 namespace NewGame1;
@@ -15,6 +16,8 @@ public partial class Main : Node
         Logging.Initialize();
         _logger = Logging.For<Main>();
         _logger.LogInformation("Startup: Main ready");
+
+        Logging.RegisterCommands(GetNode<DevConsole>("/root/DevConsole").Registry);
 
         var userArgs = OS.GetCmdlineUserArgs();
 

@@ -12,21 +12,27 @@ public partial class DevConsole : CanvasLayer
 
     public CommandRegistry Registry { get; } = new();
 
+    public bool IsOpen => _panel.Visible;
+
+    public string InputText => _input.Text;
+
     private readonly BoundedLog _history = new(HistoryCapacity);
     private readonly List<string> _submitted = [];
     private ColorRect _panel = null!;
     private RichTextLabel _output = null!;
     private LineEdit _input = null!;
+    private ILogger<DevConsole> _logger = null!;
     private int _historyCursor;
     private bool _openAllowed;
 
     public override void _Ready()
     {
         Logging.Initialize();
+        _logger = Logging.For<DevConsole>();
         ProcessMode = ProcessModeEnum.Always;
         Layer = 100;
 
-        _openAllowed = DetermineOpenAllowed();
+        _openAllowed = DetermineOpenAllowed(_logger);
 
         HelpCommand.Register(Registry);
 
@@ -65,14 +71,14 @@ public partial class DevConsole : CanvasLayer
         }
     }
 
-    private static bool DetermineOpenAllowed()
+    private static bool DetermineOpenAllowed(ILogger<DevConsole> logger)
     {
         var isExportedRelease = OS.HasFeature("template_release");
         var isEditorRun = OS.HasFeature("editor");
         var devConsoleFlag = OS.GetCmdlineUserArgs().Contains("--dev-console");
         var allowed = !isExportedRelease || devConsoleFlag;
 
-        Logging.For<DevConsole>().LogInformation(
+        logger.LogInformation(
             "Dev console gating: exportedRelease={ExportedRelease} editorRun={EditorRun} devConsoleFlag={DevConsoleFlag} allowed={Allowed}",
             isExportedRelease, isEditorRun, devConsoleFlag, allowed);
 
@@ -139,7 +145,17 @@ public partial class DevConsole : CanvasLayer
 
         AppendLine("> " + line);
         var result = Registry.Execute(line);
-        AppendLine(result.Succeeded ? result.Message : $"[error] {result.FailureReason}");
+
+        if (result.Succeeded)
+        {
+            _logger.LogInformation("Command {Line} succeeded: {Message}", line, result.Message);
+            AppendLine(result.Message);
+        }
+        else
+        {
+            _logger.LogWarning("Command {Line} failed: {Reason}", line, result.FailureReason);
+            AppendLine($"[error] {result.FailureReason}");
+        }
     }
 
     private void RecallHistory(int direction)

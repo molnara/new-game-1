@@ -246,7 +246,7 @@ run a listed command, confirm its output appears, press backtick and confirm gam
       **Confirm the feature-tag behavior before relying on it.** Unlike every other engine claim in
       this feature, this one was never spiked, and the container may lack export templates. If the
       tags cannot be verified here, say so and verify on the host rather than assuming. Depends on T030.
-- [ ] T033 [US2] Wire logging and the console together. In `src/Game/Autoloads/DevConsole.cs`,
+- [X] T033 [US2] Wire logging and the console together. In `src/Game/Autoloads/DevConsole.cs`,
       record every submitted command and the result it reported, with failures logged at Warning
       carrying their reason (FR-016, FR-018). Then register a `loglevel` command from
       `src/Game/Infrastructure/Logging.cs` — printing the current minimum severity with no argument
@@ -254,13 +254,13 @@ run a listed command, confirm its output appears, press backtick and confirm gam
       mid-session (FR-003) and the logging system exposes a console command like every other system
       here (constitution III, plan.md Constitution Check). Add it to
       [contracts/console-commands.md](./contracts/console-commands.md). Depends on T030, T027, T015.
-- [ ] T034 [US2] Write `tests/Game.Tests/ConsoleInputTest.cs` (slow tier — this behavior has no Core
+- [X] T034 [US2] Write `tests/Game.Tests/ConsoleInputTest.cs` (slow tier — this behavior has no Core
       representation, and FR-028e requires it be covered here rather than by a manual checklist):
       the toggle key opens and closes the console (FR-010); the toggle keystroke does
       **not** land in the console's input field (FR-011, the defect most likely to regress silently);
       the console is visible within a single displayed frame of the key press (SC-007, SC-016).
       Depends on T030, T031.
-- [ ] T035 [US2] Validate US2 against [quickstart.md](./quickstart.md) Story 2 — the parts a human
+- [X] T035 [US2] Validate US2 against [quickstart.md](./quickstart.md) Story 2 — the parts a human
       must look at, the rest being covered by T034 — and confirm SC-006: adding a command touches only
       the registering system, no shared list.
 
