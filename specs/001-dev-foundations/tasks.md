@@ -226,7 +226,7 @@ run a listed command, confirm its output appears, press backtick and confirm gam
 - [X] T029 [P] [US2] Create `src/Core/Diagnostics/BoundedLog.cs` — the ring buffer backing console
       output history, default capacity 1000, oldest discarded first, configurable through the launch
       flag T015 establishes rather than a mechanism of its own (FR-019). Makes T022 pass.
-- [ ] T030 [US2] Create `src/Game/Autoloads/DevConsole.cs` — a code-built `CanvasLayer` with
+- [X] T030 [US2] Create `src/Game/Autoloads/DevConsole.cs` — a code-built `CanvasLayer` with
       `ProcessMode = Always`, a scrollable output history backed by `BoundedLog` and a single-line
       input field. Handle the toggle in `_UnhandledKeyInput` and call
       `GetViewport().SetInputAsHandled()` on the toggle event so the backtick never reaches the
@@ -234,10 +234,10 @@ run a listed command, confirm its output appears, press backtick and confirm gam
       recall previously submitted commands with the history keys (FR-017). Delegate every decision to
       `CommandRegistry` — this file holds input handling and text rendering only (research R8, R9).
       Signals PascalCase, `[Export]` fields unprefixed (constitution VI). Depends on T027, T029.
-- [ ] T031 [US2] Register the console in `project.godot`: an `InputMap` action (default backtick,
+- [X] T031 [US2] Register the console in `project.godot`: an `InputMap` action (default backtick,
       remappable — never a hard-coded key, FR-009 and the awkward-layout edge case) and `DevConsole`
       as an autoload so it is available from any scene without a restart. Depends on T030.
-- [ ] T032 [US2] Gate opening in `src/Game/Autoloads/DevConsole.cs` per FR-009a: the console is
+- [X] T032 [US2] Gate opening in `src/Game/Autoloads/DevConsole.cs` per FR-009a: the console is
       compiled into every build, but in an exported release build it opens only when a
       `--dev-console` launch flag explicitly enables it. Distinguish the build kind at runtime with
       Godot's feature tags — `OS.HasFeature("template_release")` for an exported release,
