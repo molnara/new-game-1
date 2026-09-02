@@ -441,10 +441,10 @@ trimming — nothing else depends on it.
 
 ### Implementation for User Story 5
 
-- [ ] T056 [P] [US5] Create `src/Core/Diagnostics/FrameTimeStatistics.cs` — the immutable snapshot:
+- [X] T056 [P] [US5] Create `src/Core/Diagnostics/FrameTimeStatistics.cs` — the immutable snapshot:
       average, p95, p99, worst, sample count, low-confidence flag, and interim/final kind. Makes T055
       pass.
-- [ ] T057 [US5] Create `src/Core/Diagnostics/FrameTimeHistogram.cs` — fixed 0.1 ms buckets from 0 to
+- [X] T057 [US5] Create `src/Core/Diagnostics/FrameTimeHistogram.cs` — fixed 0.1 ms buckets from 0 to
       ~100 ms plus one overflow bucket, with running count, sum and maximum; `Snapshot()` produces a
       `FrameTimeStatistics` without mutating or resetting (research R12). Makes T054 pass. Depends on
       T056.
