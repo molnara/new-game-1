@@ -175,7 +175,7 @@ Validated capture name (FR-025).
 
 | Rule | Behavior |
 |---|---|
-| Empty or omitted | Falls back to the default name `screenshot` (FR-021). |
+| Empty or omitted | Falls back to the default name `main` (FR-021) — deliberately the same default `scripts/screenshot.sh` uses, so a no-argument capture from either path writes the one file the golden reference covers. |
 | Contains `/`, `\`, or `..` | Rejected — must not write outside `artifacts/`. |
 | Contains characters illegal in a file name | Rejected with a message naming the offending input. |
 | Already ends in `.png` | Accepted; the extension is not doubled. |

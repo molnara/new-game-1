@@ -632,7 +632,8 @@ reversible decision, recorded here so planning can challenge it.
   reference is in scope (FR-035, FR-036), as is a command that regenerates one (FR-035a); a process
   for reviewing and signing off updates is not.
 - Gameplay-specific console commands. This feature delivers the console and the mechanism for
-  registering commands, plus `help` and `screenshot`; each gameplay system contributes its own
+  registering commands, plus the developer-facing commands the systems in this feature contribute —
+  `help`, `screenshot`, `perf`, `perfstats` and `loglevel`; each gameplay system contributes its own
   commands as it is built.
 - A graphical log viewer, in-game log overlay, or filtering UI. Logs are read as files.
 - Video or animated capture, and capture of anything other than the rendered view.

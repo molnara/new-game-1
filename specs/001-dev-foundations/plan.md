@@ -297,6 +297,7 @@ src/Core/                          # engine-free; no `using Godot`
 │   ├── CommandDescriptor.cs       # name, summary, usage, handler
 │   ├── CommandResult.cs           # success/failure + message (FR-015, FR-016)
 │   ├── CommandLineParser.cs       # tokenizer: quotes, whitespace
+│   ├── CommandArgs.cs             # parsed tokens for one invocation (data-model.md)
 │   └── HelpCommand.cs             # `help` and `help <cmd>` (FR-012)
 ├── Diagnostics/
 │   ├── BoundedLog.cs              # ring buffer for console history (FR-019)
@@ -306,7 +307,10 @@ src/Core/                          # engine-free; no `using Godot`
 │   └── IPerformanceCounters.cs    # Core-declared engine/OS counter service
 └── Screenshots/
     ├── IScreenshotService.cs      # Core-declared engine service
-    └── ScreenshotName.cs          # name validation (FR-025)
+    ├── ScreenshotName.cs          # name validation (FR-025)
+    └── ScreenshotCommand.cs       # `screenshot [name]` handler — stays in Core so argument
+                                   # validation and result formatting are fast-tier testable
+                                   # against a fake service (research R8)
 
 src/Game/
 ├── Main.cs                        # root script of scenes/Main.tscn. Class name matches the
@@ -341,6 +345,7 @@ tests/
 ├── Core.Tests/Console/            # xUnit fast tier: registry, parser, help, validation
 ├── Core.Tests/Diagnostics/        # xUnit fast tier: ring buffer, retention, histogram percentiles
 ├── Game.Tests/                    # GoDotTest slow tier — compiles INTO the game assembly
+│   ├── SmokeTest.cs               # proves the tier is discovered and runs (FR-028c, FR-028d)
 │   ├── ConsoleInputTest.cs        # toggle open/close, keystroke isolation (FR-010, FR-011, SC-007)
 │   ├── OverlayToggleTest.cs       # overlay on/off, sampling independent of it (FR-038, FR-045)
 │   └── CaptureTimingTest.cs       # harness waits a fixed frame count (FR-026)

@@ -146,7 +146,12 @@ severity-tagged, source-tagged entries covering startup through shutdown.
       configurable minimum level defaulting to Information (FR-003), and the four required fields per
       entry — time, severity, source system, message — one entry per line in plain text (FR-002).
       Prune via `LogRetentionPolicy` **at session start, before opening the new file**, and never
-      touch a file another session holds open (FR-006). Depends on T011–T014.
+      touch a file another session holds open (FR-006).
+      **Establish the configuration mechanism this feature uses throughout**: a `--log-level <level>`
+      launch flag read from `OS.GetCmdlineUserArgs()`, the same convention `--screenshot` and
+      `--run-tests` already use (research R5, R14), so debug is opt-in per run without a rebuild. The
+      other two configurable defaults — console history (FR-019, T029) and the statistics interval
+      (FR-046, T060) — reuse it rather than inventing their own. Depends on T011–T014.
 - [ ] T016 [US1] Wire logging into `src/Game/Main.cs`: initialise before anything else so startup is
       in the record, and call `Log.CloseAndFlush()` on `_ExitTree`/`NOTIFICATION_WM_CLOSE_REQUEST` so
       the final batch reaches disk (FR-005). Depends on T015.
@@ -158,7 +163,9 @@ severity-tagged, source-tagged entries covering startup through shutdown.
       confirm exactly one new session log covering startup through shutdown; run twice concurrently
       and confirm two distinct files (FR-001b); `kill -9` a run and confirm previously reported
       warnings and errors are all still on disk (SC-002); run 11+ sessions and confirm only 10 are
-      retained and `godot.log` is untouched.
+      retained and `godot.log` is untouched. Measure log growth over a timed run at the default
+      severity and confirm the one-hour projection stays under 50 MB (SC-008) — if it does not, the
+      default severity or the per-entry verbosity is wrong, and this is the cheapest moment to learn it.
 
 **Checkpoint**: Sessions are reviewable after the fact. Every later story writes into this record.
 
@@ -184,7 +191,11 @@ run a listed command, confirm its output appears, press backtick and confirm gam
       retained** and never halts (FR-014); an unrecognized name yields a failure naming the input and
       pointing at `help` (FR-015); a handler that throws is caught at the registry boundary and
       converted to a failure carrying the exception detail (FR-016, constitution III); `All` is
-      ordered by name.
+      ordered by name. In the same task write
+      `tests/Core.Tests/Console/CommandDescriptorTests.cs` covering the validation data-model.md
+      states and T023 implements — construction throws on an empty name, an empty summary, or a name
+      containing whitespace. `CommandDescriptor` is a Core feature with behavior, so constitution II
+      requires it ship with tests of its own rather than inheriting the registry's.
 - [ ] T021 [P] [US2] Write `tests/Core.Tests/Console/HelpCommandTests.cs`: bare `help` lists every
       registered command as `name — summary` ordered by name and reflects whatever is registered at
       that moment; `help <command>` shows summary and usage; `help <unknown>` fails naming the unknown
@@ -197,7 +208,7 @@ run a listed command, confirm its output appears, press backtick and confirm gam
 
 - [ ] T023 [P] [US2] Create `src/Core/Console/CommandDescriptor.cs` — immutable record of `Name`,
       `Summary`, `Usage`, `Handler`; construction throws on an empty name, empty summary, or a name
-      containing whitespace (data-model.md).
+      containing whitespace (FR-013, data-model.md). Makes the descriptor half of T020 pass.
 - [ ] T024 [P] [US2] Create `src/Core/Console/CommandArgs.cs` — `CommandName` plus `Positional`
       tokens with quotes already resolved. (Not named individually in plan.md's file list; it is the
       parser's output type from data-model.md.)
@@ -207,12 +218,14 @@ run a listed command, confirm its output appears, press backtick and confirm gam
       `CommandArgs`. Makes T019 pass. Depends on T024.
 - [ ] T027 [US2] Create `src/Core/Console/CommandRegistry.cs` — `Register`, `TryResolve`, `All`, and
       `Execute(line)` chaining parse → resolve → invoke → `CommandResult`, catching handler
-      exceptions and logging them through `ILogger<T>` (never `using Godot`). Makes T020 pass.
-      Depends on T023, T025, T026.
+      exceptions and logging them through `ILogger<T>` (never `using Godot`). Registration is the
+      whole integration for a system adding a command — no shared list, no edit to an unrelated
+      system (FR-013, SC-006). Makes T020 pass. Depends on T023, T025, T026.
 - [ ] T028 [US2] Create `src/Core/Console/HelpCommand.cs` — `help` and `help <command>` registered
       against the registry (FR-012). Makes T021 pass. Depends on T027.
 - [ ] T029 [P] [US2] Create `src/Core/Diagnostics/BoundedLog.cs` — the ring buffer backing console
-      output history, default capacity 1000, oldest discarded first (FR-019). Makes T022 pass.
+      output history, default capacity 1000, oldest discarded first, configurable through the launch
+      flag T015 establishes rather than a mechanism of its own (FR-019). Makes T022 pass.
 - [ ] T030 [US2] Create `src/Game/Autoloads/DevConsole.cs` — a code-built `CanvasLayer` with
       `ProcessMode = Always`, a scrollable output history backed by `BoundedLog` and a single-line
       input field. Handle the toggle in `_UnhandledKeyInput` and call
@@ -225,14 +238,25 @@ run a listed command, confirm its output appears, press backtick and confirm gam
       remappable — never a hard-coded key, FR-009 and the awkward-layout edge case) and `DevConsole`
       as an autoload so it is available from any scene without a restart. Depends on T030.
 - [ ] T032 [US2] Gate opening in `src/Game/Autoloads/DevConsole.cs` per FR-009a: the console is
-      compiled into every build, but in an exported release build — distinguished at runtime, not
-      inferred — it opens only when a launch flag or setting explicitly enables it. Log which mode
-      applied at startup. Depends on T030.
-- [ ] T033 [US2] Record console activity in the session log from
-      `src/Game/Autoloads/DevConsole.cs`: every submitted command and the result it reported, with
-      failures logged at Warning carrying their reason (FR-016, FR-018). Depends on T030, T015.
+      compiled into every build, but in an exported release build it opens only when a
+      `--dev-console` launch flag explicitly enables it. Distinguish the build kind at runtime with
+      Godot's feature tags — `OS.HasFeature("template_release")` for an exported release,
+      `OS.HasFeature("editor")` for an editor run — never by inferring it from anything else. Log
+      which mode applied at startup.
+      **Confirm the feature-tag behavior before relying on it.** Unlike every other engine claim in
+      this feature, this one was never spiked, and the container may lack export templates. If the
+      tags cannot be verified here, say so and verify on the host rather than assuming. Depends on T030.
+- [ ] T033 [US2] Wire logging and the console together. In `src/Game/Autoloads/DevConsole.cs`,
+      record every submitted command and the result it reported, with failures logged at Warning
+      carrying their reason (FR-016, FR-018). Then register a `loglevel` command from
+      `src/Game/Infrastructure/Logging.cs` — printing the current minimum severity with no argument
+      and setting it with one — so the severity configured at launch in T015 is also adjustable
+      mid-session (FR-003) and the logging system exposes a console command like every other system
+      here (constitution III, plan.md Constitution Check). Add it to
+      [contracts/console-commands.md](./contracts/console-commands.md). Depends on T030, T027, T015.
 - [ ] T034 [US2] Write `tests/Game.Tests/ConsoleInputTest.cs` (slow tier — this behavior has no Core
-      representation): the toggle key opens and closes the console (FR-010); the toggle keystroke does
+      representation, and FR-028e requires it be covered here rather than by a manual checklist):
+      the toggle key opens and closes the console (FR-010); the toggle keystroke does
       **not** land in the console's input field (FR-011, the defect most likely to regress silently);
       the console is visible within a single displayed frame of the key press (SC-007, SC-016).
       Depends on T030, T031.
@@ -259,7 +283,9 @@ The headless path is independently valuable and does not need the console.
 ### Tests for User Story 3 (write first, confirm failing) ⚠️
 
 - [ ] T036 [P] [US3] Write `tests/Core.Tests/Screenshots/ScreenshotNameTests.cs`: empty or omitted
-      falls back to the default name `screenshot`; a name containing `/`, `\` or `..` is rejected so
+      falls back to the default name **`main`** — deliberately the same default `scripts/screenshot.sh`
+      uses, so a no-argument capture from the console and from the command line write the one file the
+      golden covers, rather than two files of which only one is checked; a name containing `/`, `\` or `..` is rejected so
       nothing can be written outside `artifacts/`; a name with characters illegal in a file name is
       rejected with a message naming the offending input; a name already ending `.png` is accepted
       without doubling the extension (FR-025).
@@ -281,8 +307,8 @@ The headless path is independently valuable and does not need the console.
       registered against `CommandRegistry`, calling `IScreenshotService` and formatting the result per
       contracts/console-commands.md. Makes T037 pass. Depends on T038, T039, T027.
 - [ ] T041 [US3] Create `src/Game/Infrastructure/GodotScreenshotService.cs` implementing
-      `IScreenshotService` from the viewport texture: create `artifacts/` if absent (FR-023), write the
-      PNG, and on any failure leave **no** empty or partial file behind — write to a temporary path and
+      `IScreenshotService` from the viewport texture: capture the currently rendered view and write it
+      as a PNG into `artifacts/` (FR-020), creating the folder if absent (FR-023); on any failure leave **no** empty or partial file behind — write to a temporary path and
       move into place (FR-027). A missing viewport texture (the `--headless` case) fails with that
       reason rather than producing a blank image (research R1). Depends on T038.
 - [ ] T042 [US3] Create `src/Game/Autoloads/ScreenshotHarness.cs` — inert unless `--screenshot <name>`
@@ -305,6 +331,9 @@ The headless path is independently valuable and does not need the console.
 - [ ] T046 [US3] Validate US3 against [quickstart.md](./quickstart.md) Story 3, including SC-003: ten
       consecutive `scripts/screenshot.sh` runs each produce a non-empty PNG at the expected dimensions
       showing the drawn scene rather than a blank frame. Read the image, do not just check its size.
+      Then confirm FR-034's second half — replaceability: neither `scripts/screenshot.sh` nor
+      `scripts/verify.sh` may name the placeholder scene, both reaching it through `project.godot`'s
+      `main_scene`, so the first real scene can replace it without editing either script.
 
 **Checkpoint**: Rendering is verifiable without a human looking at a window.
 
@@ -322,7 +351,8 @@ it stops at that stage, names it, and exits non-zero.
 
 **Depends on**: US1–US3 (it composes them) and Phase 2 (the Godot test stage).
 
-- [ ] T047 [P] [US4] Create `scripts/compare-golden.sh` per contracts/cli-scripts.md:
+- [ ] T047 [P] [US4] Create `scripts/compare-golden.sh` per contracts/cli-scripts.md — the
+      comparison half of FR-035, reporting how many pixels differ:
       `compare -metric AE` — **not** `magick compare`, which does not exist here (research R3).
       `compare` writes its metric to **stderr** and exits non-zero when images differ, so capture
       stderr and do not let `set -e` abort on that expected exit (research R2). Threshold defaults to
@@ -334,13 +364,16 @@ it stops at that stage, names it, and exits non-zero.
       and whether it replaced an existing file; leave the existing reference untouched if the capture
       fails. It MUST NOT be a `verify.sh` stage: a gate that regenerates its own expectation cannot
       fail. Depends on T044.
-- [ ] T049 [US4] Generate and commit `tests/golden/main.png` by running `scripts/update-golden.sh main`
+- [ ] T049 [US4] Generate and commit `tests/golden/main.png` — the committed reference FR-035
+      requires for each capture target — by running `scripts/update-golden.sh main`
       in the container (never on the host — the host renders through a real GPU driver and will not
       match byte-for-byte, research R2). Read the image before committing it. Depends on T048.
 - [ ] T050 [US4] Create `scripts/verify.sh` with the six stages in order, stopping at the first
       failure (FR-028, FR-030): (1) `dotnet build`; (2) `dotnet format NewGame1.sln
       --verify-no-changes --no-restore` — bare, no subcommand, so whitespace, style and analyzers all
-      run, and branching on its exit code, which **is** trustworthy (research R13); (3) `dotnet test`
+      run, and branching on its exit code, which **is** trustworthy — the machine check against a
+      checked-in configuration that FR-028b mandates, reporting without modifying source (research
+      R13); (3) `dotnet test`
       on the fast tier; (4) the GoDotTest run under `xvfb-run` with an external `timeout`;
       (5) `screenshot.sh`; (6) `compare-golden.sh`. One `PASS`/`FAIL` line per stage plus the
       screenshot path (FR-029); exit 0 only when every stage passed (FR-031); no interaction, no
@@ -356,9 +389,14 @@ it stops at that stage, names it, and exits non-zero.
       `Game.Tests` assertion → FAIL naming the Godot stage with the suite, test, exception and source
       line surfaced verbatim (SC-015); run with `--run-tests=NoSuchSuite` → the stage must report FAIL
       despite the 0 exit; add an unused `using` and a `String`-for-`string` with correct indentation →
-      FAIL at the style stage naming file, line and rule id (SC-014); `git status --short` clean after
-      a passing run, proving the check modified nothing. Confirm SC-005: the failing stage is
-      identifiable from the output alone. Depends on T051.
+      FAIL at the style stage naming file, line and rule id (SC-014, FR-028b); **alter what the
+      placeholder scene looks like** — change the label's text or the background colour — and confirm
+      FAIL at the golden-compare stage reporting the differing pixel count, then revert (SC-010,
+      FR-036); `git status --short` clean after a passing run, proving the check modified nothing.
+      Confirm SC-005: the failing stage is identifiable from the output alone.
+      The golden stage is the last one whose failure path is otherwise never exercised — the same
+      shape as the two gates research R13 and R14 caught passing vacuously, which is why it is tested
+      rather than assumed. Depends on T051.
 - [ ] T053 [US4] Measure a warm `scripts/verify.sh` run (assets imported, shaders compiled) and
       confirm it completes in under 5 minutes; record the cold-run figure separately (SC-004). Depends
       on T052.
@@ -423,11 +461,14 @@ trimming — nothing else depends on it.
       on T058.
 - [ ] T060 [US5] Create `src/Game/Autoloads/PerfMonitor.cs` (sampling half) — accumulate each frame's
       `delta` into a `FrameTimeHistogram` from startup in every build, whether or not the overlay is
-      visible (FR-045), and write statistics to the session log on a configurable interval defaulting
-      to 30 seconds plus one final record at shutdown (FR-046). Interim records must be visibly
+      visible (FR-045), and write statistics to the session log on an interval defaulting to 30
+      seconds — configurable through the launch flag T015 establishes — plus one final record at
+      shutdown (FR-046). Interim records must be visibly
       distinguishable from the final one (FR-046a) and must reach disk as written rather than waiting
       in a batch, or an abrupt kill discards exactly what FR-046 exists to preserve (FR-046b). Make
-      the record a single searchable line (FR-042). Depends on T057, T015.
+      each record carry the session's average, 95th percentile, 99th percentile and worst single frame
+      (FR-041) as one identifiable, searchable line stating its sample count (FR-042, SC-012).
+      Depends on T057, T015.
 - [ ] T061 [US5] Add the overlay to `src/Game/Autoloads/PerfMonitor.cs` — a `CanvasLayer` refreshing
       about 4 times per second, showing each interval's **average** alongside that interval's **worst
       single frame** so a brief stall is not smoothed away (FR-039, FR-039a), displaying frame time,
@@ -455,7 +496,9 @@ trimming — nothing else depends on it.
       never opens the console still writes statistics (FR-045); `kill -9` mid-run leaves the most
       recent interim record on disk (FR-046b); a run of well under 1000 frames still writes a record
       marked low-confidence (FR-044); a headless run records unavailable metrics as unavailable and
-      crashes nothing (FR-041a). The live overlay checks need a display and are run on the host.
+      crashes nothing (FR-041a). The live overlay checks need a display and are run on the host,
+      including SC-011: the four measurements are readable within 5 seconds of opening the console,
+      with no restart.
 
 **Checkpoint**: All five user stories are independently functional.
 
@@ -475,8 +518,17 @@ trimming — nothing else depends on it.
 - [ ] T070 Confirm every `*.cs.uid` Godot generated beside a new script is staged rather than dropped
       — `git status --short` should show one per Game-side `.cs` file and none ignored (research R15).
 - [ ] T071 Run [quickstart.md](./quickstart.md) end to end, all five stories, and read the screenshot
-      it produces. Then run `scripts/verify.sh` and confirm a clean pass — the constitution's
+      it produces. Time a cold walkthrough as part of it — open the console, run `help`, produce a
+      screenshot, using nothing but `help` and no source or docs — and confirm it takes under 2
+      minutes (SC-001). Then run `scripts/verify.sh` and confirm a clean pass — the constitution's
       pre-completion gate for the feature as a whole.
+
+- [ ] T072 Audit SC-009 across the feature: walk every failure path named in the spec's acceptance
+      scenarios — unwritable log destination (FR-001a), duplicate command registration (FR-014),
+      unknown command (FR-015), failing command (FR-016), rejected screenshot name (FR-025), failed
+      capture (FR-027), each failing verification stage (FR-030), unavailable performance metrics
+      (FR-041a) — and confirm each produces a message a developer can actually read in the console,
+      the terminal, or the session log. No developer-facing failure in these systems may be silent.
 
 ---
 
@@ -507,7 +559,7 @@ stories stand on, so the stories are sequential rather than parallel. Each remai
 - Core types before Game adapters; adapters before autoload registration; registration before
   slow-tier tests.
 - Before adding any slow-tier test, ask constitution II's question first: could this be a Core test
-  instead? The five slow-tier tests here (T008, T034, T045, T064) are the ones that cannot.
+  instead? The four slow-tier tests here (T008, T034, T045, T064) are the ones that cannot.
 
 ### Parallel Opportunities
 

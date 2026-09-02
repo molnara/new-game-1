@@ -58,8 +58,10 @@ bare `help`.
 | **Summary** | Capture the current view to `artifacts/<name>.png`. |
 
 **Behavior**: captures the current viewport and writes a PNG into `artifacts/`, creating the folder
-if absent (FR-023). Omitting `name` uses the default name (FR-021). An existing file of the same name
-is replaced, and the result message says so (FR-024).
+if absent (FR-023). Omitting `name` uses the default name `main` (FR-021) — the same default
+`scripts/screenshot.sh` uses, so the console and the command line write the same file rather than two
+files of which only one has a golden reference. An existing file of the same name is replaced, and
+the result message says so (FR-024).
 
 **Success message**: reports the full path written (FR-022).
 
@@ -109,6 +111,27 @@ about 17 seconds of play.
 
 **Empty case**: before any frame has been sampled, reports that no samples exist yet rather than
 printing zeros or failing.
+
+---
+
+## `loglevel`
+
+| | |
+|---|---|
+| **Usage** | `loglevel` or `loglevel <level>` |
+| **Summary** | Show or set the minimum log severity for this session. |
+
+**Behavior**: with no argument, prints the minimum severity currently in effect. With one, sets it —
+`debug`, `information`, `warning` or `error` — so a developer can turn debug chatter on mid-session
+without relaunching (FR-003). The launch flag `--log-level <level>` sets the same value at startup;
+this command adjusts it afterwards.
+
+**Failure**: an unrecognised level fails with a message naming the input and listing the four valid
+levels. The severity in effect does not change.
+
+**Why it exists**: constitution III requires every system to expose at least one console command for
+inspecting or manipulating its state. Logging is the one system in this feature that would otherwise
+have none.
 
 ---
 
