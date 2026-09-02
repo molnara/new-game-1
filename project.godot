@@ -33,4 +33,6 @@ project/assembly_name="NewGame1"
 
 [rendering]
 
+renderer/rendering_method="forward_plus"
+rendering_device/driver="vulkan"
 rendering_device/driver.windows="d3d12"

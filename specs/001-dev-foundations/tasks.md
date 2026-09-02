@@ -49,22 +49,22 @@ Single Godot project with an engine-free core library, per plan.md *Project Stru
 **Purpose**: Make the repository's configuration match what the constitution and the research spikes
 require, before any code is written against it.
 
-- [ ] T001 [P] Expand `.editorconfig` from its current four lines into the C# style configuration
+- [X] T001 [P] Expand `.editorconfig` from its current four lines into the C# style configuration
       constitution VI makes authoritative: at minimum set `dotnet_diagnostic.IDE0005.severity`,
       `IDE0049`, `IDE0055` to `warning` or above and enable `dotnet_sort_system_directives_first`,
       plus indentation, brace and `var` rules for `[*.cs]` (research R13). This must land before the
       `verify.sh` style stage (T049) — against the current file the gate passes essentially
       everything.
-- [ ] T002 [P] Pin the renderer in `project.godot` under `[rendering]`: add
+- [X] T002 [P] Pin the renderer in `project.godot` under `[rendering]`: add
       `renderer/rendering_method="forward_plus"` (and the matching driver key) so host and container
       render the golden scene the same way (research R10). The key is currently absent, leaving the
       choice implicit.
-- [ ] T003 [P] Create the directory skeleton named in plan.md: `src/Core/Console/`,
+- [X] T003 [P] Create the directory skeleton named in plan.md: `src/Core/Console/`,
       `src/Core/Diagnostics/`, `src/Core/Screenshots/`, `src/Game/Autoloads/`,
       `src/Game/Infrastructure/`, `scripts/`, `tests/Game.Tests/`, `tests/golden/`. Do **not** add a
       `.gdignore` to `tests/Game.Tests/` — that tier compiles into the game assembly (research R14).
       Do not add per-folder `README` files (constitution VI forbids them).
-- [ ] T004 Confirm the baseline in `/workspace`: `dotnet build NewGame1.sln` succeeds, and
+- [X] T004 Confirm the baseline in `/workspace`: `dotnet build NewGame1.sln` succeeds, and
       `dotnet format NewGame1.sln --verify-no-changes --no-restore` now reports against the expanded
       `.editorconfig` rather than passing vacuously — introduce a temporary unused `using` in a
       scratch file, confirm exit code 2 and an `IDE0005` line, then remove it (research R13,
