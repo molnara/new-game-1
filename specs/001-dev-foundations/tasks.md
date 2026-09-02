@@ -328,7 +328,7 @@ The headless path is independently valuable and does not need the console.
 - [X] T045 [US3] Write `tests/Game.Tests/CaptureTimingTest.cs` (slow tier): the harness waits its
       configured frame count before capturing — frame counting is the behavior under test and has no
       Core representation (FR-026). Depends on T042.
-- [ ] T046 [US3] Validate US3 against [quickstart.md](./quickstart.md) Story 3, including SC-003: ten
+- [X] T046 [US3] Validate US3 against [quickstart.md](./quickstart.md) Story 3, including SC-003: ten
       consecutive `scripts/screenshot.sh` runs each produce a non-empty PNG at the expected dimensions
       showing the drawn scene rather than a blank frame. Read the image, do not just check its size.
       Then confirm FR-034's second half — replaceability: neither `scripts/screenshot.sh` nor
