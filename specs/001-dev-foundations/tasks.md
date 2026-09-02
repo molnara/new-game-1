@@ -119,7 +119,7 @@ severity-tagged, source-tagged entries covering startup through shutdown.
 
 ### Tests for User Story 1 (write first, confirm failing) ⚠️
 
-- [ ] T010 [P] [US1] Write `tests/Core.Tests/Diagnostics/LogRetentionPolicyTests.cs`: keeps the
+- [X] T010 [P] [US1] Write `tests/Core.Tests/Diagnostics/LogRetentionPolicyTests.cs`: keeps the
       newest `keep` files and returns the rest for deletion, orders by the timestamp embedded in the
       name, defaults `keep` to 10, and — the rule that matters — never returns Godot's own
       `godot.log` or any file not matching the session-log pattern (FR-006; research R6).
