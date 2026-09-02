@@ -100,6 +100,14 @@ public static class Logging
             HandleLogLevel));
     }
 
+    /// <summary>
+    /// Forces the file sink to disk immediately, for callers whose durability requirement is
+    /// per-write rather than per-interval — an Information-level entry otherwise waits for the
+    /// periodic flush or a Warning-triggered one (FR-046b; see <see cref="WarnErrorFlushSink"/> for
+    /// the general Warning+ policy, FR-005).
+    /// </summary>
+    public static void FlushNow() => _fileSink?.FlushToDisk();
+
     /// <summary>Flushes and closes the pipeline so the final batch reaches disk (FR-005).</summary>
     public static void Shutdown()
     {

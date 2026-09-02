@@ -459,7 +459,7 @@ trimming — nothing else depends on it.
       RAM, and **not** `MEMORY_STATIC`, which under-reported by 11x in the spike (FR-047; research
       R11). `VmRSS` is a file read, so poll it at the overlay's 4 Hz refresh, never per frame. Depends
       on T058.
-- [ ] T060 [US5] Create `src/Game/Autoloads/PerfMonitor.cs` (sampling half) — accumulate each frame's
+- [X] T060 [US5] Create `src/Game/Autoloads/PerfMonitor.cs` (sampling half) — accumulate each frame's
       `delta` into a `FrameTimeHistogram` from startup in every build, whether or not the overlay is
       visible (FR-045), and write statistics to the session log on an interval defaulting to 30
       seconds — configurable through the launch flag T015 establishes — plus one final record at
