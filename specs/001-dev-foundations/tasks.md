@@ -136,7 +136,7 @@ severity-tagged, source-tagged entries covering startup through shutdown.
 - [X] T013 [P] [US1] Create `src/Game/Infrastructure/GodotSink.cs` — a Serilog sink bridging to
       `GD.Print`/`GD.PushError` so entries also appear on the terminal in a headless run (FR-007).
       This is the **only** file in the repository permitted to call those (constitution III).
-- [ ] T014 [US1] Create `src/Game/Infrastructure/WarnErrorFlushSink.cs` — a decorating sink forcing a
+- [X] T014 [US1] Create `src/Game/Infrastructure/WarnErrorFlushSink.cs` — a decorating sink forcing a
       disk flush via `IFlushableFileSink` when an event is `Warning` or above, so warnings and errors
       survive a kill (FR-005; research R7). If `IFlushableFileSink` proves awkward, fall back to
       `buffered: false`, which exceeds the requirement at the cost of a write per entry.
