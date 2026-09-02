@@ -492,7 +492,7 @@ trimming — nothing else depends on it.
       single-frame or short-sample comparison is not sufficient given software-rendering variance.
       This is a relative comparison within one environment, so it is valid here — record the method
       and the numbers in the task's commit message. Depends on T061.
-- [ ] T066 [US5] Validate US5 against [quickstart.md](./quickstart.md) Story 5: a container run that
+- [X] T066 [US5] Validate US5 against [quickstart.md](./quickstart.md) Story 5: a container run that
       never opens the console still writes statistics (FR-045); `kill -9` mid-run leaves the most
       recent interim record on disk (FR-046b); a run of well under 1000 frames still writes a record
       marked low-confidence (FR-044); a headless run records unavailable metrics as unavailable and
