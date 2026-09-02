@@ -319,7 +319,7 @@ The headless path is independently valuable and does not need the console.
 - [X] T043 [US3] Register `ScreenshotHarness` as an autoload in `project.godot` and register the
       `screenshot` command with the registry at startup from `src/Game/Main.cs`, wiring
       `GodotScreenshotService` as the `IScreenshotService` implementation. Depends on T040, T042.
-- [ ] T044 [US3] Create `scripts/screenshot.sh` per [contracts/cli-scripts.md](./contracts/cli-scripts.md):
+- [X] T044 [US3] Create `scripts/screenshot.sh` per [contracts/cli-scripts.md](./contracts/cli-scripts.md):
       `set -euo pipefail`, runnable from any working directory, name defaults to `main`, runs under
       `xvfb-run -a` with `--rendering-method forward_plus --rendering-driver vulkan --audio-driver
       Dummy` and `-- --screenshot <name>`, wrapped in an external `timeout`. Assert success
