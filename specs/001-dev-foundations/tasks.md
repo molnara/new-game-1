@@ -140,7 +140,7 @@ severity-tagged, source-tagged entries covering startup through shutdown.
       disk flush via `IFlushableFileSink` when an event is `Warning` or above, so warnings and errors
       survive a kill (FR-005; research R7). If `IFlushableFileSink` proves awkward, fall back to
       `buffered: false`, which exceeds the requirement at the cost of a write per entry.
-- [ ] T015 [US1] Create `src/Game/Infrastructure/Logging.cs` — the static `Logging.For<T>()` entry
+- [X] T015 [US1] Create `src/Game/Infrastructure/Logging.cs` — the static `Logging.For<T>()` entry
       point (FR-004) over a Serilog pipeline: file sink with `buffered: true` and a
       `flushToDiskInterval` of at most 1 second (FR-005), the `GodotSink` alongside it (FR-007), a
       configurable minimum level defaulting to Information (FR-003), and the four required fields per
@@ -152,14 +152,14 @@ severity-tagged, source-tagged entries covering startup through shutdown.
       `--run-tests` already use (research R5, R14), so debug is opt-in per run without a rebuild. The
       other two configurable defaults — console history (FR-019, T029) and the statistics interval
       (FR-046, T060) — reuse it rather than inventing their own. Depends on T011–T014.
-- [ ] T016 [US1] Wire logging into `src/Game/Main.cs`: initialise before anything else so startup is
+- [X] T016 [US1] Wire logging into `src/Game/Main.cs`: initialise before anything else so startup is
       in the record, and call `Log.CloseAndFlush()` on `_ExitTree`/`NOTIFICATION_WM_CLOSE_REQUEST` so
       the final batch reaches disk (FR-005). Depends on T015.
-- [ ] T017 [US1] Add unhandled-failure logging in `src/Game/Infrastructure/Logging.cs`: subscribe to
+- [X] T017 [US1] Add unhandled-failure logging in `src/Game/Infrastructure/Logging.cs`: subscribe to
       `AppDomain.CurrentDomain.UnhandledException`, record the failure with its detail, flush, and let
       it surface — handled errors are logged with their cause, unhandled ones are never swallowed
       (FR-008, US1 scenario 3).
-- [ ] T018 [US1] Validate US1 against [quickstart.md](./quickstart.md) Story 1: run the game and quit,
+- [X] T018 [US1] Validate US1 against [quickstart.md](./quickstart.md) Story 1: run the game and quit,
       confirm exactly one new session log covering startup through shutdown; run twice concurrently
       and confirm two distinct files (FR-001b); `kill -9` a run and confirm previously reported
       warnings and errors are all still on disk (SC-002); run 11+ sessions and confirm only 10 are
