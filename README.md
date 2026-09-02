@@ -48,3 +48,34 @@ run the force-recreate command.
 
 Volumes survive `down`, rebuilds, and image changes. Only `podman compose down -v`
 deletes them — avoid unless you intend to log in to Claude again.
+
+## Running the project
+
+Run these inside the container (`podman compose exec gamedev bash`), or on the host with Godot
+4.7.2 (.NET) on `PATH`.
+
+### Run the game
+    xvfb-run -a godot --rendering-method forward_plus --rendering-driver vulkan --audio-driver Dummy
+
+There is no display in the container, so even a normal run goes through Xvfb — and no
+`--headless` path renders a frame. Press **`** (backtick) to open the developer console; type
+`help` for the command list.
+
+### Capture a screenshot
+    scripts/screenshot.sh [name]
+
+Writes `artifacts/<name>.png` (default `main`) and prints its path. Godot's own exit code isn't
+trustworthy, so success is checked by confirming the PNG was written.
+
+### Run the verification gate
+    scripts/verify.sh
+
+Runs build, code style (`dotnet format`), fast (xUnit) tests, slow (in-engine) tests, a
+screenshot capture, and a golden-image compare, in that order, stopping at the first failure.
+Run this before calling anything done.
+
+### Session logs
+    ~/.local/share/godot/app_userdata/"new game 1"/logs/
+
+Each run writes its own `session-*.log` (timestamp, level, source, message); the 10 most recent
+are kept. `godot.log` in the same directory is Godot's own engine log and is never pruned.
