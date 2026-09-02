@@ -79,28 +79,28 @@ Nothing can start, be tested, or be photographed until these exist.
 
 **⚠️ CRITICAL**: No user story work can begin until this phase is complete.
 
-- [ ] T005 Create `src/Game/Main.cs` — the root script class `Main`, named to match its scene file
+- [X] T005 Create `src/Game/Main.cs` — the root script class `Main`, named to match its scene file
       (constitution VI) and doubling as the GoDotTest entry point (research R14). In `_Ready()`,
       read `OS.GetCmdlineUserArgs()` — **not** `OS.GetCmdlineArgs()`, which does not see args after
       `--` and makes the process hang — and branch three ways: `--run-tests` hands the executing
       assembly to GoDotTest (guarded by `#if DEBUG`), `--screenshot` defers to the harness, otherwise
       run as the placeholder scene. This is the one file where a mistake breaks verification itself.
-- [ ] T006 Create `scenes/Main.tscn` — the placeholder capture target (FR-033): a root node running
+- [X] T006 Create `scenes/Main.tscn` — the placeholder capture target (FR-033): a root node running
       `src/Game/Main.cs`, a flat-colour background, and a `Label` identifying the build. No gameplay.
       PascalCase file name matching the root script class. (Developer confirmed 2026-09-02: creating
       scene files is fine, the host editor is not open. CLAUDE.md's "ask first" rule still applies to
       *editing* an existing `.tscn` while the editor may be running.)
-- [ ] T007 Set `application/run/main_scene="res://scenes/Main.tscn"` in `project.godot` so the game
+- [X] T007 Set `application/run/main_scene="res://scenes/Main.tscn"` in `project.godot` so the game
       has a scene to run, and so `screenshot.sh` and the Godot test stage can name it. Depends on
       T006.
-- [ ] T008 Create `tests/Game.Tests/SmokeTest.cs` — one trivial GoDotTest suite proving the slow
+- [X] T008 Create `tests/Game.Tests/SmokeTest.cs` — one trivial GoDotTest suite proving the slow
       tier discovers and runs, then confirm end to end:
       `timeout 120 xvfb-run -a godot --rendering-method forward_plus --rendering-driver vulkan
       --audio-driver Dummy res://scenes/Main.tscn -- --run-tests --quit-on-finish` exits 0 and prints
       a non-zero `Passed:` count (FR-028c, FR-028d; research R14). No csproj change is needed — the
       GoDotTest reference and the `ExportRelease` compile exclusion are already in `NewGame1.csproj`.
       Depends on T005, T007.
-- [ ] T009 Confirm the placeholder runs unattended: `timeout 60 xvfb-run -a godot
+- [X] T009 Confirm the placeholder runs unattended: `timeout 60 xvfb-run -a godot
       --rendering-method forward_plus --rendering-driver vulkan --audio-driver Dummy --quit-after 120`
       starts and exits without an error marker in its output. Depends on T007.
 
