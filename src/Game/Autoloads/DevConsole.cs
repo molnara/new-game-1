@@ -129,9 +129,7 @@ public partial class DevConsole : CanvasLayer
         var devConsoleFlag = OS.GetCmdlineUserArgs().Contains("--dev-console");
         var allowed = !isExportedRelease || devConsoleFlag;
 
-        logger.LogInformation(
-            "Dev console gating: exportedRelease={ExportedRelease} editorRun={EditorRun} devConsoleFlag={DevConsoleFlag} allowed={Allowed}",
-            isExportedRelease, isEditorRun, devConsoleFlag, allowed);
+        LogDevConsoleGating(logger, isExportedRelease, isEditorRun, devConsoleFlag, allowed);
 
         return allowed;
     }
@@ -199,7 +197,7 @@ public partial class DevConsole : CanvasLayer
 
         if (result.Succeeded)
         {
-            _logger.LogInformation("Command {Line} succeeded: {Message}", line, result.Message);
+            LogCommandSucceeded(_logger, line, result.Message);
             AppendLine(result.Message);
         }
         else
@@ -226,4 +224,10 @@ public partial class DevConsole : CanvasLayer
         _history.Add(line);
         _output.Text = string.Join('\n', _history.Entries);
     }
+
+    [LoggerMessage(Level = LogLevel.Information, Message = "Dev console gating: exportedRelease={ExportedRelease} editorRun={EditorRun} devConsoleFlag={DevConsoleFlag} allowed={Allowed}")]
+    private static partial void LogDevConsoleGating(ILogger logger, bool exportedRelease, bool editorRun, bool devConsoleFlag, bool allowed);
+
+    [LoggerMessage(Level = LogLevel.Information, Message = "Command {Line} succeeded: {Message}")]
+    private static partial void LogCommandSucceeded(ILogger logger, string line, string message);
 }

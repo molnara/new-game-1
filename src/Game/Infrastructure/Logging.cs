@@ -19,7 +19,7 @@ namespace NewGame1.Infrastructure;
 // GodotSink alongside it (FR-007), and a configurable minimum level defaulting to Information
 // (FR-003). Also establishes the --log-level <level> launch-flag convention (research R5, R14)
 // reused by console history (FR-019) and the statistics interval (FR-046).
-public static class Logging
+public static partial class Logging
 {
     // Default debug/information flush interval in seconds (FR-005); configurable via --flush-interval.
     public const double DefaultFlushIntervalSeconds = 1.0;
@@ -70,7 +70,12 @@ public static class Logging
             PruneOldSessions(resolution.Directory!);
 
             var formatter = new MessageTemplateTextFormatter(LogLineTemplate);
+            // Serilog.Sinks.File 7.0.0 has no public, non-obsolete way to construct a directly
+            // flushable buffered file sink: the only other FileSink constructor is internal, and
+            // WriteTo.File() doesn't hand back the sink instance FlushNow()/WarnErrorFlushSink need.
+#pragma warning disable CS0618 // FileSink(string, ITextFormatter, long?, Encoding?, bool) is obsolete
             _fileSink = new FileSink(resolution.FilePath!, formatter, fileSizeLimitBytes: null, Encoding.UTF8, buffered: true);
+#pragma warning restore CS0618
             config = config.WriteTo.Sink(new WarnErrorFlushSink(_fileSink));
 
             var flushInterval = ResolveFlushInterval(userArgs);
@@ -125,9 +130,12 @@ public static class Logging
     private static void OnUnhandledException(object sender, UnhandledExceptionEventArgs e)
     {
         Factory.CreateLogger("UnhandledException")
-            .LogCritical(e.ExceptionObject as Exception, "Unhandled exception (terminating: {IsTerminating})", e.IsTerminating);
+            .LogUnhandledException(e.ExceptionObject as Exception, e.IsTerminating);
         Shutdown();
     }
+
+    [LoggerMessage(Level = LogLevel.Critical, Message = "Unhandled exception (terminating: {IsTerminating})")]
+    private static partial void LogUnhandledException(this Microsoft.Extensions.Logging.ILogger logger, Exception? exception, bool isTerminating);
 
     private static void PruneOldSessions(string directory)
     {

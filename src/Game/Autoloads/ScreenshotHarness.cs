@@ -79,13 +79,16 @@ public partial class ScreenshotHarness : Node
             return;
         }
 
-        if (result.Replaced)
+        if (_logger is not null)
         {
-            _logger?.LogInformation("Screenshot harness replaced existing screenshot {Path}", result.Path);
-        }
-        else
-        {
-            _logger?.LogInformation("Screenshot harness wrote {Path}", result.Path);
+            if (result.Replaced)
+            {
+                LogScreenshotReplaced(_logger, result.Path);
+            }
+            else
+            {
+                LogScreenshotWritten(_logger, result.Path);
+            }
         }
 
         ProcessOutput.WriteLine(result.Path);
@@ -119,4 +122,10 @@ public partial class ScreenshotHarness : Node
         value = "";
         return false;
     }
+
+    [LoggerMessage(Level = LogLevel.Information, Message = "Screenshot harness replaced existing screenshot {Path}")]
+    private static partial void LogScreenshotReplaced(ILogger logger, string? path);
+
+    [LoggerMessage(Level = LogLevel.Information, Message = "Screenshot harness wrote {Path}")]
+    private static partial void LogScreenshotWritten(ILogger logger, string? path);
 }

@@ -198,18 +198,20 @@ public partial class PerfMonitor : CanvasLayer
     {
         var stats = _histogram.Snapshot(kind);
 
-        _logger.LogInformation(
-            "Frame time statistics ({Kind}): average={AverageMs:F3}ms p95={P95} p99={P99} worst={WorstMs:F3}ms samples={SampleCount} lowConfidence={IsLowConfidence} drawCalls={DrawCalls} processMemory={ProcessMemory} videoMemory={VideoMemory}",
-            kind,
-            stats.AverageMs,
-            FormatPercentile(stats.P95Ms),
-            FormatPercentile(stats.P99Ms),
-            stats.WorstMs,
-            stats.SampleCount,
-            stats.IsLowConfidence,
-            FormatCount(_counters.DrawCalls),
-            FormatBytes(_counters.ProcessMemoryBytes),
-            FormatBytes(_counters.VideoMemoryBytes));
+        if (_logger.IsEnabled(LogLevel.Information))
+        {
+            _logger.LogFrameTimeStatistics(
+                kind,
+                stats.AverageMs,
+                FormatPercentile(stats.P95Ms),
+                FormatPercentile(stats.P99Ms),
+                stats.WorstMs,
+                stats.SampleCount,
+                stats.IsLowConfidence,
+                FormatCount(_counters.DrawCalls),
+                FormatBytes(_counters.ProcessMemoryBytes),
+                FormatBytes(_counters.VideoMemoryBytes));
+        }
 
         Logging.FlushNow();
     }
@@ -301,4 +303,28 @@ public partial class PerfMonitor : CanvasLayer
         value = "";
         return false;
     }
+}
+
+// A separate static class: [LoggerMessage] extension methods require a non-generic static
+// container, which the CanvasLayer-derived PerfMonitor itself cannot be. Kept extension-style
+// (rather than a plain static call) so CA1873's IsEnabled-guard recognition — which pattern-matches
+// on the logger being the receiver of the log call, not just an argument — actually takes effect
+// at the WriteStatistics call site above.
+internal static partial class PerfMonitorLog
+{
+    [LoggerMessage(
+        Level = LogLevel.Information,
+        Message = "Frame time statistics ({Kind}): average={AverageMs:F3}ms p95={P95} p99={P99} worst={WorstMs:F3}ms samples={SampleCount} lowConfidence={IsLowConfidence} drawCalls={DrawCalls} processMemory={ProcessMemory} videoMemory={VideoMemory}")]
+    public static partial void LogFrameTimeStatistics(
+        this ILogger logger,
+        FrameTimeStatisticsKind kind,
+        double averageMs,
+        string p95,
+        string p99,
+        double worstMs,
+        long sampleCount,
+        bool isLowConfidence,
+        string drawCalls,
+        string processMemory,
+        string videoMemory);
 }
