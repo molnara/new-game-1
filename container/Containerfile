@@ -11,7 +11,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
       ripgrep jq less procps nano imagemagick \
       libx11-6 libxcursor1 libxinerama1 libxrandr2 libxi6 \
       libgl1 libegl1 libxkbcommon0 libfontconfig1 libasound2t64 libpulse0 \
-      xvfb mesa-utils libgl1-mesa-dri mesa-vulkan-drivers vulkan-tools \
+      xvfb mesa-utils libgl1-mesa-dri mesa-vulkan-drivers vulkan-tools xauth python3 \
     && rm -rf /var/lib/apt/lists/*
 
 # Godot (.NET build)
@@ -36,6 +36,16 @@ RUN set -eux; \
 
 RUN mkdir -p /usr/share/dotnet/metadata/workloads \
     && chown -R ${UID}:${GID} /usr/share/dotnet/metadata
+
+# Github
+RUN mkdir -p -m 755 /etc/apt/keyrings \
+    && curl -fsSL https://cli.github.com/packages/githubcli-archive-keyring.gpg \
+         -o /etc/apt/keyrings/githubcli-archive-keyring.gpg \
+    && chmod go+r /etc/apt/keyrings/githubcli-archive-keyring.gpg \
+    && echo "deb [arch=amd64 signed-by=/etc/apt/keyrings/githubcli-archive-keyring.gpg] https://cli.github.com/packages stable main" \
+         > /etc/apt/sources.list.d/github-cli.list \
+    && apt-get update && apt-get install -y --no-install-recommends gh \
+    && rm -rf /var/lib/apt/lists/*
 
 USER ${USERNAME}
 ENV HOME=/home/${USERNAME}

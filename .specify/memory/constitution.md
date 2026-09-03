@@ -1,22 +1,26 @@
 <!--
 Sync Impact Report
 ==================
-Version change: (unversioned template) → 1.0.0
-Bump rationale: Initial ratification. The prior file was the unfilled scaffold with no
-project-specific values, so this is the first governing version rather than an amendment.
+Version change: 1.1.0 → 1.1.1
+Bump rationale: PATCH. The zero-warning rule clarifies an existing gate rather than adding a
+new one: `scripts/verify.sh` already had to pass before a task could be reported complete, and
+the build is already warning-gated. This amendment states in prose what "pass" means for
+warnings and names `.editorconfig` as the only place a suppression may live. No principle is
+added, removed, or redefined, and no new obligation is created beyond what the existing gate
+already enforced.
 
 Modified principles:
-  - [PRINCIPLE_1_NAME] → I. Core/Adapter Separation (NON-NEGOTIABLE)
-  - [PRINCIPLE_2_NAME] → II. Test-First, Two Tiers
-  - [PRINCIPLE_3_NAME] → III. Observability by Default
-  - [PRINCIPLE_4_NAME] → IV. Visual Verification
-  - [PRINCIPLE_5_NAME] → V. Simplicity
+  - None renamed, added, or redefined.
 
-Added sections:
-  - Additional Constraints (was [SECTION_2_NAME])
-  - Development Workflow & Quality Gates (was [SECTION_3_NAME])
+Added sections: none
 
 Removed sections: none
+
+Other changes:
+  - Development Workflow & Quality Gates: added the zero-warning completion rule — warnings are
+    fixed or suppressed in `.editorconfig` with a written justification, never left in place.
+    Scope stated as build, analyzer, and Godot runtime warnings, matching the reporting rule
+    already in `CLAUDE.md`.
 
 Deferred TODOs: none. All placeholders resolved.
 -->
@@ -95,10 +99,30 @@ Absent such a justification, the simplest thing that works is the correct thing.
 **Rationale**: this is a small game; every dependency is maintenance burden and a learning cost
 paid by one person.
 
+### VI. Standards Are Automated
+
+Code style is defined by `.editorconfig` and the .NET analyzers, not by prose in this or any
+other document. `dotnet format` MUST pass before a commit, and it runs as part of
+`scripts/verify.sh`. A style disagreement is settled by changing the configuration, never by a
+review comment or a remembered convention.
+
+Godot naming is fixed and MUST be followed: scene files are PascalCase and match the class name
+of their root script; signals are PascalCase; exported fields carry no prefix.
+
+Documentation is minimal and lives where it is generated. `specs/` is the design record. The root
+`README` covers running the project. Comments explain **why**, not **what**. XML doc comments
+appear only on public `src/Core` APIs. Per-folder `README` files and separate ADR documents MUST
+NOT be created.
+
+**Rationale**: this is a solo hobby project. A standard that has to be remembered or interpreted
+will not survive; a standard that is generated and machine-checked will.
+
 ## Additional Constraints
 
 - **Stack**: Godot 4.7.2 (.NET) with C# targeting `net10.0`. Host and container run identical
   versions.
+- **Code style**: defined by `.editorconfig` and the analyzer configuration; enforced by
+  `dotnet format`, not by prose or review comments.
 - **Repository layout**: `src/Core` (engine-free logic), `src/Game` (Godot adapters),
   `src/Game/Infrastructure` (engine-service implementations), `tests/Core.Tests` (xUnit),
   `tests/Game.Tests` (GoDotTest), `scripts/` (verification tooling), `scenes/`, `assets/`.
@@ -112,12 +136,17 @@ paid by one person.
 
 Work happens on spec-kit feature branches and merges to `master` by squash PR.
 
-`scripts/verify.sh` — build, Core tests, Godot tests, screenshot — MUST pass before any task is
-reported complete. A task with a failing or unrun `verify.sh` is not complete, and reporting it
-as complete is a violation of this constitution regardless of how small the change looked.
+`scripts/verify.sh` — build, `dotnet format`, Core tests, Godot tests, screenshot — MUST pass
+before any task is reported complete. A task with a failing or unrun `verify.sh` is not complete,
+and reporting it as complete is a violation of this constitution regardless of how small the
+change looked.
 
 When verification fails for reasons outside the change (broken tooling, environment drift), the
 implementer MUST say so explicitly rather than silently skipping the gate.
+
+A task is not complete while it introduces warnings. Warnings are fixed or explicitly suppressed
+with a justification in `.editorconfig`; they are never left. This applies to build, analyzer, and
+Godot runtime warnings alike.
 
 ## Governance
 
@@ -135,4 +164,4 @@ Every PR is reviewed against these principles before merge. Deviations MUST be r
 plan's Complexity Tracking section with a justification, not discovered after the fact in the
 diff.
 
-**Version**: 1.0.0 | **Ratified**: 2026-09-01 | **Last Amended**: 2026-09-01
+**Version**: 1.1.1 | **Ratified**: 2026-09-01 | **Last Amended**: 2026-09-03
