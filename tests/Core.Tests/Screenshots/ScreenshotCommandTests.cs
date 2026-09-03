@@ -74,6 +74,6 @@ public class ScreenshotCommandTests
         var result = registry.Execute("screenshot");
 
         result.Succeeded.ShouldBeFalse();
-        result.FailureReason.ShouldContain("no viewport texture available");
+        result.FailureReason.ShouldNotBeNull().ShouldContain("no viewport texture available");
     }
 }

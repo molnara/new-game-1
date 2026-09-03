@@ -8,7 +8,7 @@ namespace NewGame1.Infrastructure;
 // Game-side IScreenshotService capturing the main viewport's rendered texture (FR-020, FR-023,
 // FR-027; research R1). Writes the PNG to a temporary path first and only moves it into place on
 // success, so a failed capture never leaves an empty or partial file behind.
-public sealed class GodotScreenshotService : IScreenshotService
+public sealed partial class GodotScreenshotService : IScreenshotService
 {
     private readonly string _artifactsDirectory;
 
@@ -106,10 +106,16 @@ public sealed class GodotScreenshotService : IScreenshotService
         }
         catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
         {
-            Logging.TryFor<GodotScreenshotService>()?.LogWarning(
-                ex,
-                "Could not delete the temporary screenshot file {Path} after a failed capture; it is left behind",
-                path);
+            var logger = Logging.TryFor<GodotScreenshotService>();
+            if (logger is not null)
+            {
+                LogTempFileDeleteFailed(logger, ex, path);
+            }
         }
     }
+
+    [LoggerMessage(
+        Level = LogLevel.Warning,
+        Message = "Could not delete the temporary screenshot file {Path} after a failed capture; it is left behind")]
+    private static partial void LogTempFileDeleteFailed(ILogger logger, Exception ex, string path);
 }

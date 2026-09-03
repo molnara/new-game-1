@@ -97,7 +97,11 @@ public partial class ScreenshotHarness : Node
 
     private void Fail(string reason)
     {
-        _logger?.LogError("Screenshot harness capture failed: {Reason}", reason);
+        if (_logger is not null)
+        {
+            LogCaptureFailed(_logger, reason);
+        }
+
         ProcessOutput.WriteErrorLine($"screenshot failed: {reason}");
         GetTree().Quit(1);
     }
@@ -128,4 +132,7 @@ public partial class ScreenshotHarness : Node
 
     [LoggerMessage(Level = LogLevel.Information, Message = "Screenshot harness wrote {Path}")]
     private static partial void LogScreenshotWritten(ILogger logger, string? path);
+
+    [LoggerMessage(Level = LogLevel.Error, Message = "Screenshot harness capture failed: {Reason}")]
+    private static partial void LogCaptureFailed(ILogger logger, string reason);
 }

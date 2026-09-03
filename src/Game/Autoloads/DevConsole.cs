@@ -202,7 +202,7 @@ public partial class DevConsole : CanvasLayer
         }
         else
         {
-            _logger.LogWarning("Command {Line} failed: {Reason}", line, result.FailureReason);
+            LogCommandFailed(_logger, line, result.FailureReason);
             AppendLine($"[error] {result.FailureReason}");
         }
     }
@@ -230,4 +230,7 @@ public partial class DevConsole : CanvasLayer
 
     [LoggerMessage(Level = LogLevel.Information, Message = "Command {Line} succeeded: {Message}")]
     private static partial void LogCommandSucceeded(ILogger logger, string line, string message);
+
+    [LoggerMessage(Level = LogLevel.Warning, Message = "Command {Line} failed: {Reason}")]
+    private static partial void LogCommandFailed(ILogger logger, string line, string? reason);
 }

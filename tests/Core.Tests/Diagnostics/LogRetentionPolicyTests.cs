@@ -5,6 +5,9 @@ namespace NewGame1.Core.Tests.Diagnostics;
 
 public class LogRetentionPolicyTests
 {
+    private static readonly string[] ExpectedLiveProcessLogRetained = ["session-20260102T000000000-222.log"];
+    private static readonly string[] ExpectedPidlessLogEligible = ["session-20260101T000000000.log"];
+
     // Session log names are sortable by their embedded timestamp: session-<yyyyMMddTHHmmssfff>.log
     private static string Session(string timestamp) => $"session-{timestamp}.log";
 
@@ -133,7 +136,7 @@ public class LogRetentionPolicyTests
 
         var toDelete = LogRetentionPolicy.SelectForDeletion(existing, keep: 1, isProcessAlive: pid => pid == 111);
 
-        toDelete.ShouldBe(new[] { "session-20260102T000000000-222.log" });
+        toDelete.ShouldBe(ExpectedLiveProcessLogRetained);
     }
 
     [Fact]
@@ -147,7 +150,7 @@ public class LogRetentionPolicyTests
 
         var toDelete = LogRetentionPolicy.SelectForDeletion(existing, keep: 0, isProcessAlive: _ => true);
 
-        toDelete.ShouldBe(new[] { "session-20260101T000000000.log" });
+        toDelete.ShouldBe(ExpectedPidlessLogEligible);
     }
 
     [Fact]

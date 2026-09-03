@@ -16,7 +16,7 @@ public partial class Main : Node
     {
         Logging.Initialize();
         _logger = Logging.For<Main>();
-        _logger.LogInformation("Startup: Main ready");
+        LogStartupReady(_logger);
 
         var registry = GetNode<DevConsole>("/root/DevConsole").Registry;
         Logging.RegisterCommands(registry);
@@ -42,14 +42,22 @@ public partial class Main : Node
     {
         if (what == NotificationWMCloseRequest)
         {
-            _logger?.LogInformation("Shutdown: close requested");
+            if (_logger is not null)
+            {
+                LogShutdownCloseRequested(_logger);
+            }
+
             Logging.Shutdown();
         }
     }
 
     public override void _ExitTree()
     {
-        _logger?.LogInformation("Shutdown: exiting tree");
+        if (_logger is not null)
+        {
+            LogShutdownExitingTree(_logger);
+        }
+
         Logging.Shutdown();
     }
 
@@ -59,4 +67,13 @@ public partial class Main : Node
         _ = GoTest.RunTests(Assembly.GetExecutingAssembly(), this, TestEnvironment.From(OS.GetCmdlineUserArgs()));
     }
 #endif
+
+    [LoggerMessage(Level = LogLevel.Information, Message = "Startup: Main ready")]
+    private static partial void LogStartupReady(ILogger logger);
+
+    [LoggerMessage(Level = LogLevel.Information, Message = "Shutdown: close requested")]
+    private static partial void LogShutdownCloseRequested(ILogger logger);
+
+    [LoggerMessage(Level = LogLevel.Information, Message = "Shutdown: exiting tree")]
+    private static partial void LogShutdownExitingTree(ILogger logger);
 }

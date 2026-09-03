@@ -5,6 +5,8 @@ namespace NewGame1.Core.Tests.Console;
 
 public class CommandRegistryTests
 {
+    private static readonly string[] ExpectedNamesInOrder = ["alpha", "mid", "zeta"];
+
     private static CommandDescriptor Descriptor(string name, Func<CommandArgs, CommandResult>? handler = null) =>
         new(name, $"{name} summary.", name, handler ?? (_ => CommandResult.Ok($"{name} ran")));
 
@@ -50,8 +52,8 @@ public class CommandRegistryTests
         var result = registry.Execute("nosuchcommand");
 
         result.Succeeded.ShouldBeFalse();
-        result.FailureReason.ShouldContain("nosuchcommand");
-        result.FailureReason.ShouldContain("help");
+        result.FailureReason.ShouldNotBeNull().ShouldContain("nosuchcommand");
+        result.FailureReason.ShouldNotBeNull().ShouldContain("help");
     }
 
     [Fact]
@@ -63,7 +65,7 @@ public class CommandRegistryTests
         var result = registry.Execute("boom");
 
         result.Succeeded.ShouldBeFalse();
-        result.FailureReason.ShouldContain("kaboom");
+        result.FailureReason.ShouldNotBeNull().ShouldContain("kaboom");
     }
 
     [Fact]
@@ -74,7 +76,7 @@ public class CommandRegistryTests
         registry.Register(Descriptor("alpha"));
         registry.Register(Descriptor("mid"));
 
-        registry.All.Select(d => d.Name).ShouldBe(new[] { "alpha", "mid", "zeta" });
+        registry.All.Select(d => d.Name).ShouldBe(ExpectedNamesInOrder);
     }
 
     [Fact]

@@ -5,6 +5,9 @@ namespace NewGame1.Core.Tests.Diagnostics;
 
 public class BoundedLogTests
 {
+    private static readonly string[] ExpectedThreeOldestFirst = ["one", "two", "three"];
+    private static readonly string[] ExpectedAfterOldestDropped = ["two", "three"];
+
     [Fact]
     public void CapacityIsFixedAtConstruction()
     {
@@ -29,7 +32,7 @@ public class BoundedLogTests
         log.Add("two");
         log.Add("three");
 
-        log.Entries.ShouldBe(new[] { "one", "two", "three" });
+        log.Entries.ShouldBe(ExpectedThreeOldestFirst);
     }
 
     [Fact]
@@ -41,6 +44,6 @@ public class BoundedLogTests
         log.Add("two");
         log.Add("three");
 
-        log.Entries.ShouldBe(new[] { "two", "three" });
+        log.Entries.ShouldBe(ExpectedAfterOldestDropped);
     }
 }

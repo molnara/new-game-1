@@ -47,8 +47,8 @@ public class FrameTimeHistogramTests
 
         var stats = histogram.Snapshot();
 
-        stats.P95Ms.Value.ShouldBeInRange(9.9, 10.1);
-        stats.P99Ms.Value.ShouldBeInRange(9.9, 10.1);
+        stats.P95Ms.ShouldNotBeNull().ShouldBeInRange(9.9, 10.1);
+        stats.P99Ms.ShouldNotBeNull().ShouldBeInRange(9.9, 10.1);
     }
 
     [Fact]

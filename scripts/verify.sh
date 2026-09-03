@@ -34,7 +34,13 @@ run_stage() {
 }
 
 stage_build() {
-    dotnet build NewGame1.sln
+    # --no-incremental and -warnaserror are both load-bearing (issue #3). Up-to-date projects are
+    # not recompiled, so a warm build re-emits none of their diagnostics: the same tree that
+    # cold-builds with 14 warnings reports "0 Warning(s)" on the second run. Forcing a full
+    # recompile is what makes the count real; -warnaserror is what makes it blocking.
+    # Deliberately here and not as TreatWarningsAsErrors in Directory.Build.props: the gate and CI
+    # stay strict while a developer's inner-loop `dotnet build` stays fast and non-blocking.
+    dotnet build NewGame1.sln --no-incremental -warnaserror -v minimal
 }
 
 stage_style() {
@@ -46,6 +52,32 @@ stage_style() {
     enforced_rules="$(grep -cE '^\s*dotnet_diagnostic\.[A-Za-z0-9]+\.severity\s*=\s*(warning|error)\b' "${repo_root}/.editorconfig")"
     if (( enforced_rules == 0 )); then
         echo "verify.sh: .editorconfig enforces no diagnostic at warning or above — style stage would pass vacuously" >&2
+        return 1
+    fi
+
+    # issue #3: the build stage's -warnaserror cannot see a diagnostic set to `severity = none` —
+    # that suppresses at the analyzer, before MSBuild has a warning to promote, so it is invisible
+    # to the ratchet by construction. "No warning is ignored" and "no warning is hidden" are two
+    # failure modes needing two controls; this is the second. Silencing a rule stays allowed, but
+    # only with a justification carrying an `Expiry:` condition in the comment block directly above
+    # it, so the decision gets re-audited rather than inherited forever. To re-audit one: flip the
+    # line to `= warning`, rebuild, and read what comes back.
+    local unjustified
+    unjustified="$(awk '
+        /^[[:space:]]*#/ {
+            if (!in_comment) { in_comment = 1; expiry = 0 }
+            if (tolower($0) ~ /expiry:/) { expiry = 1 }
+            next
+        }
+        /^[[:space:]]*dotnet_diagnostic\.[A-Za-z0-9]+\.severity[[:space:]]*=[[:space:]]*none([[:space:]]|$)/ {
+            if (!in_comment || !expiry) { print "  .editorconfig:" FNR ": " $0 }
+            next
+        }
+        { in_comment = 0; expiry = 0 }
+    ' "${repo_root}/.editorconfig")"
+    if [[ -n "${unjustified}" ]]; then
+        echo "verify.sh: .editorconfig silences a diagnostic with no justification carrying an 'Expiry:' condition:" >&2
+        echo "${unjustified}" >&2
         return 1
     fi
 

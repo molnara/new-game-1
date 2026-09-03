@@ -5,12 +5,16 @@ namespace NewGame1.Core.Tests.Console;
 
 public class CommandLineParserTests
 {
+    private static readonly string[] ExpectedTopicsOnly = ["topics"];
+    private static readonly string[] ExpectedTopicsAndExtra = ["topics", "extra"];
+    private static readonly string[] ExpectedQuotedShot = ["my shot"];
+
     [Fact]
     public void SplitsWhitespaceSeparatedTokens()
     {
         CommandLineParser.TryParse("help topics", out var args).ShouldBeTrue();
         args!.CommandName.ShouldBe("help");
-        args.Positional.ShouldBe(new[] { "topics" });
+        args.Positional.ShouldBe(ExpectedTopicsOnly);
     }
 
     [Fact]
@@ -18,7 +22,7 @@ public class CommandLineParserTests
     {
         CommandLineParser.TryParse("help   topics    extra", out var args).ShouldBeTrue();
         args!.CommandName.ShouldBe("help");
-        args.Positional.ShouldBe(new[] { "topics", "extra" });
+        args.Positional.ShouldBe(ExpectedTopicsAndExtra);
     }
 
     [Fact]
@@ -26,7 +30,7 @@ public class CommandLineParserTests
     {
         CommandLineParser.TryParse("screenshot \"my shot\"", out var args).ShouldBeTrue();
         args!.CommandName.ShouldBe("screenshot");
-        args.Positional.ShouldBe(new[] { "my shot" });
+        args.Positional.ShouldBe(ExpectedQuotedShot);
     }
 
     [Fact]

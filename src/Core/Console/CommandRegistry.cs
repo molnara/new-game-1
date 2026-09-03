@@ -7,7 +7,7 @@ namespace NewGame1.Core.Console;
 /// The set of registered developer commands; what <c>help</c> enumerates and the console resolves
 /// against. Registration is append-only within a session — commands are never unregistered.
 /// </summary>
-public sealed class CommandRegistry(ILogger<CommandRegistry>? logger = null)
+public sealed partial class CommandRegistry(ILogger<CommandRegistry>? logger = null)
 {
     private readonly Dictionary<string, CommandDescriptor> _commands = new(StringComparer.OrdinalIgnoreCase);
     private readonly ILogger<CommandRegistry> _logger = logger ?? NullLogger<CommandRegistry>.Instance;
@@ -40,7 +40,7 @@ public sealed class CommandRegistry(ILogger<CommandRegistry>? logger = null)
         }
         catch (DuplicateCommandException ex)
         {
-            _logger.LogError(ex, "Command registration rejected: {Message}", ex.Message);
+            LogRegistrationRejected(_logger, ex, ex.Message);
             return false;
         }
     }
@@ -72,8 +72,14 @@ public sealed class CommandRegistry(ILogger<CommandRegistry>? logger = null)
         }
         catch (Exception ex)
         {
-            _logger.LogWarning(ex, "Command '{Command}' threw an exception", args.CommandName);
+            LogCommandThrew(_logger, ex, args.CommandName);
             return CommandResult.Fail(ex.Message);
         }
     }
+
+    [LoggerMessage(Level = LogLevel.Error, Message = "Command registration rejected: {Message}")]
+    private static partial void LogRegistrationRejected(ILogger logger, Exception ex, string message);
+
+    [LoggerMessage(Level = LogLevel.Warning, Message = "Command '{Command}' threw an exception")]
+    private static partial void LogCommandThrew(ILogger logger, Exception ex, string command);
 }

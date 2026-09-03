@@ -61,7 +61,7 @@ public class HelpCommandTests
         var result = registry.Execute("help nosuchcommand");
 
         result.Succeeded.ShouldBeFalse();
-        result.FailureReason.ShouldContain("nosuchcommand");
-        result.FailureReason.ShouldContain("help");
+        result.FailureReason.ShouldNotBeNull().ShouldContain("nosuchcommand");
+        result.FailureReason.ShouldNotBeNull().ShouldContain("help");
     }
 }
