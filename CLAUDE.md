@@ -43,3 +43,6 @@ environment facts only.
 - Do not modify container/ without asking.
 - Before reporting a task done, run scripts/verify.sh (once it exists) and read any
   screenshot it produces.
+- Task completion summaries must quote every build, analyzer, test, and Godot runtime
+  warning verbatim, even if the task otherwise passed. "No warnings" is a claim to
+  verify with --no-incremental, not an assumption.
