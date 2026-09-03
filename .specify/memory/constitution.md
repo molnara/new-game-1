@@ -1,25 +1,26 @@
 <!--
 Sync Impact Report
 ==================
-Version change: 1.0.0 → 1.1.0
-Bump rationale: MINOR. A new principle (VI. Standards Are Automated) is added and the
-verification gate is materially expanded to include `dotnet format`. No existing principle is
-removed or redefined in a backward-incompatible way.
+Version change: 1.1.0 → 1.1.1
+Bump rationale: PATCH. The zero-warning rule clarifies an existing gate rather than adding a
+new one: `scripts/verify.sh` already had to pass before a task could be reported complete, and
+the build is already warning-gated. This amendment states in prose what "pass" means for
+warnings and names `.editorconfig` as the only place a suppression may live. No principle is
+added, removed, or redefined, and no new obligation is created beyond what the existing gate
+already enforced.
 
 Modified principles:
-  - None renamed or redefined.
+  - None renamed, added, or redefined.
 
-Added sections:
-  - VI. Standards Are Automated (new principle)
+Added sections: none
 
 Removed sections: none
 
 Other changes:
-  - Additional Constraints: `.editorconfig` and analyzers named as the source of code style.
-  - Development Workflow & Quality Gates: `dotnet format` added to the `scripts/verify.sh` gate.
-
-Numbering note: the amendment was requested as principle VII, but the constitution had no
-principle VI. It is numbered VI here to keep the sequence contiguous.
+  - Development Workflow & Quality Gates: added the zero-warning completion rule — warnings are
+    fixed or suppressed in `.editorconfig` with a written justification, never left in place.
+    Scope stated as build, analyzer, and Godot runtime warnings, matching the reporting rule
+    already in `CLAUDE.md`.
 
 Deferred TODOs: none. All placeholders resolved.
 -->
@@ -143,6 +144,10 @@ change looked.
 When verification fails for reasons outside the change (broken tooling, environment drift), the
 implementer MUST say so explicitly rather than silently skipping the gate.
 
+A task is not complete while it introduces warnings. Warnings are fixed or explicitly suppressed
+with a justification in `.editorconfig`; they are never left. This applies to build, analyzer, and
+Godot runtime warnings alike.
+
 ## Governance
 
 This constitution supersedes other practice documents in this repository. Where `CLAUDE.md`, a
@@ -159,4 +164,4 @@ Every PR is reviewed against these principles before merge. Deviations MUST be r
 plan's Complexity Tracking section with a justification, not discovered after the fact in the
 diff.
 
-**Version**: 1.1.0 | **Ratified**: 2026-09-01 | **Last Amended**: 2026-09-02
+**Version**: 1.1.1 | **Ratified**: 2026-09-01 | **Last Amended**: 2026-09-03
